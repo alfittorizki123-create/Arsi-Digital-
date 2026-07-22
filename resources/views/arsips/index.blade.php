@@ -3,13 +3,13 @@
 @section('title', 'Daftar Arsip Pajak')
 
 @section('content')
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-lg">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-sm">
         <div>
             <h2 class="font-display-md text-display-md text-on-surface">Daftar Arsip Pajak</h2>
             <p class="text-body-md text-on-surface-variant mt-1">Kelola dan telusuri dokumen arsip perpajakan daerah.</p>
         </div>
         <div class="flex items-center gap-stack-sm">
-            <a href="#" class="flex items-center gap-2 px-4 py-2 rounded border border-primary-container text-primary-container font-label-md text-label-md hover:bg-primary-container/10 transition-colors bg-surface-container-lowest">
+            <a href="{{ route('arsips.import') }}" class="flex items-center gap-2 px-4 py-2 rounded border border-primary-container text-primary-container font-label-md text-label-md hover:bg-primary-container/10 transition-colors bg-surface-container-lowest">
                 <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
                 Import Excel
             </a>
@@ -27,7 +27,7 @@
     @endif
 
     {{-- Filter Card --}}
-    <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md mb-stack-lg shadow-sm">
+    <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md mb-stack-sm shadow-sm">
         <form method="GET" action="{{ route('arsips.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-stack-md">
             <div class="lg:col-span-1">
                 <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Pencarian</label>

@@ -68,7 +68,7 @@ module.exports = {
         'stack-lg': '1.5rem',
         'gutter': '1.5rem',
         'header-height': '64px',
-        'container-padding': '2rem',
+        'container-padding': '1rem',
         'sidebar-width': '260px',
         'stack-md': '1rem',
       },
