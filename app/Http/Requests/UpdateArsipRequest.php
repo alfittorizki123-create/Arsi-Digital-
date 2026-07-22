@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateArsipRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        $arsipId = $this->route('arsip')->id;
+
+        return [
+            'nomor_arsip' => ['required', 'string', 'max:100', Rule::unique('arsips', 'nomor_arsip')->ignore($arsipId)],
+            'jenis_pajak_id' => ['required', 'exists:jenis_pajaks,id'],
+            'nama_wajib_pajak' => ['required', 'string', 'max:255'],
+            'tahun_arsip' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
+            'nomor_rak' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', Rule::in(['aktif', 'inaktif'])],
+            'unit_id' => ['required', 'exists:units,id'],
+            'file_arsip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'hapus_file' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'nomor_arsip' => 'nomor arsip',
+            'jenis_pajak_id' => 'jenis pajak',
+            'nama_wajib_pajak' => 'nama wajib pajak',
+            'tahun_arsip' => 'tahun arsip',
+            'nomor_rak' => 'nomor rak',
+            'status' => 'status',
+            'unit_id' => 'unit/UPT',
+            'file_arsip' => 'file arsip',
+            'hapus_file' => 'hapus file',
+        ];
+    }
+}
