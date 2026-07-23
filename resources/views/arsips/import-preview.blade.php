@@ -48,11 +48,12 @@
                     <tr>
                         <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Baris</th>
                         <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Status</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nomor Arsip</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Jenis Pajak</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nama WP</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Tahun</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Unit</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Tipe</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Kode</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Uraian</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Kurun</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Jml</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Boks</th>
                         <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Keterangan</th>
                     </tr>
                 </thead>
@@ -62,16 +63,23 @@
                             <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['line'] }}</td>
                             <td class="py-3 px-4">
                                 @if ($row['valid'])
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold uppercase bg-primary-fixed text-on-primary-fixed">OK</span>
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-primary-fixed text-on-primary-fixed">OK</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold uppercase bg-error-container text-on-error-container">Error</span>
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-error-container text-on-error-container">Error</span>
                                 @endif
                             </td>
-                            <td class="py-3 px-4 text-body-md text-on-surface font-medium">{{ $row['data']['nomor_arsip'] ?? '-' }}</td>
-                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['jenis_pajak_label'] ?? '-' }}</td>
-                            <td class="py-3 px-4 text-body-md text-on-surface">{{ $row['data']['nama_wajib_pajak'] ?? '-' }}</td>
-                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['tahun_arsip'] ?? '-' }}</td>
-                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['unit_label'] ?? '-' }}</td>
+                            <td class="py-3 px-4">
+                                @if ($row['data']['tipe_arsip'] === 'rekap')
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-tertiary-fixed text-on-tertiary-fixed">Rekap</span>
+                                @else
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-secondary-fixed text-on-secondary-fixed">Detail</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4 text-body-md text-on-surface font-medium">{{ $row['data']['kode_klasifikasi'] ?? '-' }}</td>
+                            <td class="py-3 px-4 text-body-md text-on-surface max-w-xs truncate">{{ $row['data']['uraian_informasi_arsip'] ?? '-' }}</td>
+                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['kurun_waktu'] ?? '-' }}</td>
+                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['jumlah'] ?? '-' }}</td>
+                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $row['data']['nomor_boks'] ?? '-' }}</td>
                             <td class="py-3 px-4 text-body-md text-on-surface-variant">
                                 @if ($row['valid'])
                                     —

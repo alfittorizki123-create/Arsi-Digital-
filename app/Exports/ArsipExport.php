@@ -27,8 +27,17 @@ class ArsipExport implements FromCollection, WithHeadings, WithMapping
         if (! empty($this->filters['status'])) {
             $query->where('status', $this->filters['status']);
         }
-        if (! empty($this->filters['tahun'])) {
-            $query->where('tahun_arsip', $this->filters['tahun']);
+        if (! empty($this->filters['kurun_waktu'])) {
+            $query->where('kurun_waktu', $this->filters['kurun_waktu']);
+        }
+        if (! empty($this->filters['tipe_arsip'])) {
+            $query->where('tipe_arsip', $this->filters['tipe_arsip']);
+        }
+        if (! empty($this->filters['kondisi'])) {
+            $query->where('kondisi', $this->filters['kondisi']);
+        }
+        if (! empty($this->filters['klasifikasi_keamanan'])) {
+            $query->where('klasifikasi_keamanan', $this->filters['klasifikasi_keamanan']);
         }
 
         return $query->get();
@@ -37,32 +46,43 @@ class ArsipExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'Nomor Arsip',
-            'Jenis Pajak',
-            'Kode Jenis Pajak',
-            'Nama Wajib Pajak',
-            'Tahun Arsip',
-            'Nomor Rak',
-            'Unit/UPT',
-            'Kode Unit',
-            'Status',
-            'Tanggal Dicatat',
+            'NO',
+            'KODE KLASIFIKASI',
+            'NO ARSIP/BERKAS',
+            'URAIAN INFORMASI ARSIP',
+            'KURUN WAKTU',
+            'JUMLAH',
+            'Satuan',
+            'TINGKAT PERKEMBANGAN',
+            'NO. BOKS',
+            'KONDISI ARSIP',
+            'KLASIFIKASI KEAMANAN',
+            'TIPE ARSIP',
+            'UNIT',
+            'STATUS',
         ];
     }
 
     public function map($arsip): array
     {
+        static $i = 0;
+        $i++;
+
         return [
-            $arsip->nomor_arsip,
-            $arsip->jenisPajak->nama_jenis_pajak ?? '',
-            $arsip->jenisPajak->kode ?? '',
-            $arsip->nama_wajib_pajak,
-            $arsip->tahun_arsip,
-            $arsip->nomor_rak ?? '',
+            $i,
+            $arsip->kode_klasifikasi ?? '',
+            $arsip->nomor_arsip_berkas ?? '',
+            $arsip->uraian_informasi_arsip ?? '',
+            $arsip->kurun_waktu ?? '',
+            $arsip->jumlah ?? '',
+            $arsip->satuan ?? 'Berkas',
+            $arsip->tingkat_perkembangan ?? '',
+            $arsip->nomor_boks ?? '',
+            $arsip->kondisi ?? '',
+            $arsip->klasifikasi_keamanan ?? '',
+            $arsip->tipe_arsip,
             $arsip->unit->nama_unit ?? '',
-            $arsip->unit->kode_unit ?? '',
             $arsip->status,
-            optional($arsip->created_at)->format('Y-m-d H:i'),
         ];
     }
 }

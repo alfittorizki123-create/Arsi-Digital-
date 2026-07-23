@@ -6,7 +6,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-lg">
         <div>
             <h2 class="font-display-md text-display-md text-on-surface">Detail Arsip</h2>
-            <p class="text-body-md text-on-surface-variant mt-1">Informasi lengkap arsip {{ $arsip->nomor_arsip }}.</p>
+            <p class="text-body-md text-on-surface-variant mt-1">Informasi lengkap arsip @if($arsip->kode_klasifikasi){{ $arsip->kode_klasifikasi }}@else(No. kode)@endif.</p>
         </div>
         <div class="flex items-center gap-stack-sm">
             <a href="{{ route('arsips.index') }}" class="flex items-center gap-2 px-4 py-2 rounded border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors">
@@ -25,41 +25,71 @@
             <h3 class="text-headline-sm font-bold text-on-surface mb-stack-md">Metadata Arsip</h3>
             <dl class="space-y-3">
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Nomor Arsip</dt>
-                    <dd class="text-body-md text-on-surface font-medium">{{ $arsip->nomor_arsip }}</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Tipe Arsip</dt>
+                    <dd>
+                        @if ($arsip->tipe_arsip === 'rekap')
+                            <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-tertiary-fixed text-on-tertiary-fixed">Rekap</span>
+                        @else
+                            <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-secondary-fixed text-on-secondary-fixed">Detail</span>
+                        @endif
+                    </dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Jenis Pajak</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->jenisPajak->nama_jenis_pajak ?? '-' }} ({{ $arsip->jenisPajak->kode ?? '-' }})</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Kode Klasifikasi</dt>
+                    <dd class="text-body-md text-on-surface font-medium">{{ $arsip->kode_klasifikasi ?? '-' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Nama Wajib Pajak</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->nama_wajib_pajak }}</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">No. Arsip/Berkas</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->nomor_arsip_berkas ?? '-' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Tahun Arsip</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->tahun_arsip }}</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Uraian Informasi Arsip</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->uraian_informasi_arsip ?? '-' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Nomor Rak</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->nomor_rak ?? '-' }}</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Kurun Waktu</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->kurun_waktu ?? '-' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Unit/UPT</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->unit->nama_unit ?? '-' }}</dd>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Jumlah</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->jumlah ?? '-' }} {{ $arsip->satuan ?? '' }}</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Status</dt>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Tingkat Perkembangan</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->tingkat_perkembangan ?? '-' }}</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">No. Boks</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->nomor_boks ?? '-' }}</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Kondisi</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->kondisi ?? '-' }}</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Klasifikasi Keamanan</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->klasifikasi_keamanan ?? '-' }}</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Unit/UPT/UP</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->unit->nama_unit ?? '-' }} @if($arsip->unit)({{ $arsip->unit->kode_unit }})@endif</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Jenis Pajak</dt>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->jenisPajak->nama_jenis_pajak ?? '-' }} @if($arsip->jenisPajak)({{ $arsip->jenisPajak->kode }})@endif</dd>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Status</dt>
                     <dd>
                         @if ($arsip->status === 'aktif')
-                            <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold tracking-wide uppercase bg-primary-fixed text-on-primary-fixed">Aktif</span>
+                            <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-primary-fixed text-on-primary-fixed">Aktif</span>
                         @else
-                            <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold tracking-wide uppercase bg-surface-container-highest text-on-surface-variant">Inaktif</span>
+                            <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-surface-container-highest text-on-surface-variant">Inaktif</span>
                         @endif
                     </dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4">
-                    <dt class="text-label-md text-on-surface-variant w-40 shrink-0">Dicatat</dt>
+                    <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Dicatat</dt>
                     <dd class="text-body-md text-on-surface">{{ $arsip->created_at->format('d/m/Y H:i') }}</dd>
                 </div>
             </dl>
@@ -85,7 +115,7 @@
                     </div>
                 @elseif ($arsip->isImage())
                     <div class="w-full border border-outline-variant rounded-lg overflow-hidden bg-surface flex items-center justify-center p-2">
-                        <img src="{{ $arsip->file_url }}" alt="Dokumen {{ $arsip->nomor_arsip }}" class="max-w-full max-h-[480px] object-contain rounded">
+                        <img src="{{ $arsip->file_url }}" alt="Dokumen" class="max-w-full max-h-[480px] object-contain rounded">
                     </div>
                 @else
                     <p class="text-body-md text-on-surface-variant">Tipe file tidak dapat dipratinjau. Silakan buka file secara langsung.</p>

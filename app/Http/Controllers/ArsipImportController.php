@@ -15,14 +15,22 @@ class ArsipImportController extends Controller
 {
     public function create()
     {
-        return view('arsips.import');
+        $units = Unit::orderBy('nama_unit')->get();
+
+        return view('arsips.import', compact('units'));
     }
 
     public function preview(Request $request)
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
-        ], [], ['file' => 'file excel']);
+            'unit_id' => ['nullable', 'exists:units,id'],
+        ], [], [
+            'file' => 'file excel',
+            'unit_id' => 'unit/UPT/UP',
+        ]);
+
+        $unitId = $request->filled('unit_id') ? (int) $request->unit_id : null;
 
         $import = new ArsipPreviewImport;
         Excel::import($import, $request->file('file'));
@@ -31,63 +39,49 @@ class ArsipImportController extends Controller
         $preview = [];
         $jenisMap = $this->buildJenisMap();
         $unitMap = $this->buildUnitMap();
-        $existingNomor = Arsip::pluck('nomor_arsip')->map(fn ($n) => strtolower($n))->all();
 
         foreach ($rows as $index => $row) {
             $line = $index + 2;
             $normalized = $this->normalizeRow($row->toArray());
 
-            if ($this->isEmptyRow($normalized)) {
+            // Skip empty rows, total rows, signature rows
+            if ($this->isSkipRow($normalized)) {
                 continue;
             }
 
             $errors = [];
             $data = [
-                'nomor_arsip' => $normalized['nomor_arsip'] ?? null,
-                'nama_wajib_pajak' => $normalized['nama_wajib_pajak'] ?? null,
-                'tahun_arsip' => $normalized['tahun_arsip'] ?? null,
-                'nomor_rak' => $normalized['nomor_rak'] ?? null,
-                'status' => $this->normalizeStatus($normalized['status'] ?? 'aktif'),
+                'kode_klasifikasi' => $normalized['kode_klasifikasi'] ?? null,
+                'nomor_arsip_berkas' => $normalized['nomor_arsip_berkas'] ?? null,
+                'uraian_informasi_arsip' => $normalized['uraian_informasi_arsip'] ?? null,
+                'kurun_waktu' => $normalized['kurun_waktu'] ?? null,
+                'jumlah' => $normalized['jumlah'] ?? null,
+                'satuan' => $normalized['satuan'] ?? 'Berkas',
+                'tingkat_perkembangan' => $this->normalizeTingkat($normalized['tingkat_perkembangan'] ?? null),
+                'nomor_boks' => $normalized['nomor_boks'] ?? null,
+                'kondisi' => $this->normalizeKondisi($normalized['kondisi'] ?? null),
+                'klasifikasi_keamanan' => $this->normalizeKeamanan($normalized['klasifikasi_keamanan'] ?? null),
+                'tipe_arsip' => $this->detectTipe($normalized),
+                'status' => 'inaktif',
+                'unit_id' => $unitId,
                 'jenis_pajak_id' => null,
-                'jenis_pajak_label' => $normalized['jenis_pajak'] ?? null,
-                'unit_id' => null,
-                'unit_label' => $normalized['unit'] ?? null,
             ];
 
             $validator = Validator::make($data, [
-                'nomor_arsip' => ['required', 'string', 'max:100'],
-                'nama_wajib_pajak' => ['required', 'string', 'max:255'],
-                'tahun_arsip' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
-                'nomor_rak' => ['nullable', 'string', 'max:50'],
+                'kurun_waktu' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
+                'jumlah' => ['nullable', 'integer', 'min:0'],
+                'tipe_arsip' => ['required', 'in:rekap,detail'],
                 'status' => ['required', 'in:aktif,inaktif'],
             ]);
 
             if ($validator->fails()) {
                 $errors = array_merge($errors, $validator->errors()->all());
             }
-
-            if (! empty($data['nomor_arsip']) && in_array(strtolower($data['nomor_arsip']), $existingNomor, true)) {
-                $errors[] = 'Nomor arsip sudah ada di database.';
+            if (empty($data['uraian_informasi_arsip']) && empty($data['kode_klasifikasi'])) {
+                $errors[] = 'Uraian atau kode klasifikasi wajib diisi.';
             }
-
-            $jenisKey = $this->lookupKey($normalized['jenis_pajak'] ?? '');
-            if ($jenisKey === '') {
-                $errors[] = 'Jenis pajak wajib diisi.';
-            } elseif (! isset($jenisMap[$jenisKey])) {
-                $errors[] = 'Jenis pajak tidak ditemukan: ' . ($normalized['jenis_pajak'] ?? '-');
-            } else {
-                $data['jenis_pajak_id'] = $jenisMap[$jenisKey]['id'];
-                $data['jenis_pajak_label'] = $jenisMap[$jenisKey]['label'];
-            }
-
-            $unitKey = $this->lookupKey($normalized['unit'] ?? '');
-            if ($unitKey === '') {
-                $errors[] = 'Unit/UPT wajib diisi.';
-            } elseif (! isset($unitMap[$unitKey])) {
-                $errors[] = 'Unit/UPT tidak ditemukan: ' . ($normalized['unit'] ?? '-');
-            } else {
-                $data['unit_id'] = $unitMap[$unitKey]['id'];
-                $data['unit_label'] = $unitMap[$unitKey]['label'];
+            if (! $unitId) {
+                $errors[] = 'Unit/UPT belum dipilih (pilih sebelum upload).';
             }
 
             $preview[] = [
@@ -133,21 +127,11 @@ class ArsipImportController extends Controller
 
             $data = $row['data'];
 
-            if (Arsip::where('nomor_arsip', $data['nomor_arsip'])->exists()) {
-                $skipped++;
-                continue;
-            }
+            if (empty($data['satuan'])) $data['satuan'] = 'Berkas';
+            if (empty($data['kondisi'])) $data['kondisi'] = 'Baik';
+            if (empty($data['klasifikasi_keamanan'])) $data['klasifikasi_keamanan'] = 'Terbuka';
 
-            Arsip::create([
-                'nomor_arsip' => $data['nomor_arsip'],
-                'jenis_pajak_id' => $data['jenis_pajak_id'],
-                'nama_wajib_pajak' => $data['nama_wajib_pajak'],
-                'tahun_arsip' => (int) $data['tahun_arsip'],
-                'nomor_rak' => $data['nomor_rak'] ?: null,
-                'status' => $data['status'],
-                'unit_id' => $data['unit_id'],
-            ]);
-
+            Arsip::create($data);
             $imported++;
         }
 
@@ -176,34 +160,23 @@ class ArsipImportController extends Controller
         }
 
         return [
-            'nomor_arsip' => $this->firstValue($map, [
-                'nomor_arsip', 'no_arsip', 'nomor', 'no', 'nomorarsip',
-            ]),
-            'jenis_pajak' => $this->firstValue($map, [
-                'jenis_pajak', 'jenis', 'kode_jenis_pajak', 'kode_pajak', 'jenispajak',
-            ]),
-            'nama_wajib_pajak' => $this->firstValue($map, [
-                'nama_wajib_pajak', 'nama_wp', 'wajib_pajak', 'nama', 'namawajibpajak',
-            ]),
-            'tahun_arsip' => $this->firstValue($map, [
-                'tahun_arsip', 'tahun', 'tahunarsip',
-            ]),
-            'nomor_rak' => $this->firstValue($map, [
-                'nomor_rak', 'no_rak', 'rak', 'nomorrak',
-            ]),
-            'unit' => $this->firstValue($map, [
-                'unit', 'unit_upt', 'kode_unit', 'nama_unit', 'upt', 'kodeunit',
-            ]),
-            'status' => $this->firstValue($map, [
-                'status',
-            ]),
+            'kode_klasifikasi' => $this->firstValue($map, ['kode_klasifikasi', 'kode', 'klasifikasi']),
+            'nomor_arsip_berkas' => $this->firstValue($map, ['no_arsip_berkas', 'nomor_arsip_berkas', 'no_arsip', 'nomor', 'no']),
+            'uraian_informasi_arsip' => $this->firstValue($map, ['uraian_informasi_arsip', 'uraian', 'informasi', 'uraian_informasi', 'deskripsi']),
+            'kurun_waktu' => $this->firstValue($map, ['kurun_waktu', 'kurun', 'tahun', 'tahun_arsip']),
+            'jumlah' => $this->firstValue($map, ['jumlah', 'jml']),
+            'satuan' => $this->firstValue($map, ['satuan']),
+            'tingkat_perkembangan' => $this->firstValue($map, ['tingkat_perkembangan', 'tingkat', 'perkembangan']),
+            'nomor_boks' => $this->firstValue($map, ['no_boks', 'nomor_boks', 'no_boks_keterangan_no_boks', 'boks', 'no_boks_keterangan']),
+            'kondisi' => $this->firstValue($map, ['kondisi_arsip', 'kondisi']),
+            'klasifikasi_keamanan' => $this->firstValue($map, ['klasifikasi_keamanan_dan_akses_arsip', 'klasifikasi_keamanan', 'keamanan']),
         ];
     }
 
     private function normalizeHeader(string $header): string
     {
         $header = Str::lower(trim($header));
-        $header = str_replace([' ', '-', '/', '\\'], '_', $header);
+        $header = str_replace([' ', '-', '/', '\\', '.'], '_', $header);
         $header = preg_replace('/_+/', '_', $header);
 
         return trim($header, '_');
@@ -220,42 +193,68 @@ class ArsipImportController extends Controller
         return null;
     }
 
-    private function isEmptyRow(array $data): bool
+    private function isSkipRow(array $data): bool
     {
-        return empty($data['nomor_arsip'])
-            && empty($data['nama_wajib_pajak'])
-            && empty($data['jenis_pajak'])
-            && empty($data['unit']);
+        $uraian = strtolower((string) ($data['uraian_informasi_arsip'] ?? ''));
+        if (str_contains($uraian, 'jumlah')) return true;
+        if (str_contains($uraian, 'pekanbaru,')) return true;
+        if (str_contains($uraian, 'yang memindahkan')) return true;
+        if (str_contains($uraian, 'sekretaris')) return true;
+        if (str_contains($uraian, 'selaku')) return true;
+        if (str_contains($uraian, 'nip.')) return true;
+        if (str_contains($uraian, 'kepala')) return true;
+
+        return empty($data['kode_klasifikasi'])
+            && empty($data['uraian_informasi_arsip'])
+            && empty($data['kurun_waktu']);
     }
 
-    private function normalizeStatus($status): string
+    private function normalizeTingkat($val): ?string
     {
-        $status = Str::lower(trim((string) $status));
+        if (empty($val)) return null;
+        $val = Str::lower(trim((string) $val));
+        if (str_contains($val, 'asli') && str_contains($val, 'copy')) return 'Asli/Copy';
+        if (str_contains($val, 'asli')) return 'Asli';
+        if (str_contains($val, 'copy')) return 'Copy';
+        return null;
+    }
 
-        if (in_array($status, ['inaktif', 'inactive', 'nonaktif', '0'], true)) {
-            return 'inaktif';
+    private function normalizeKondisi($val): ?string
+    {
+        if (empty($val)) return null;
+        $val = Str::lower(trim((string) $val));
+        if (str_contains($val, 'rusak')) return 'Rusak';
+        return 'Baik';
+    }
+
+    private function normalizeKeamanan($val): ?string
+    {
+        if (empty($val)) return null;
+        $val = Str::lower(trim((string) $val));
+        if (str_contains($val, 'rahasia')) return 'Rahasia';
+        if (str_contains($val, 'terbatas')) return 'Terbatas';
+        return 'Terbuka';
+    }
+
+    private function detectTipe(array $data): string
+    {
+        $uraian = strtolower((string) ($data['uraian_informasi_arsip'] ?? ''));
+        $jumlah = (int) ($data['jumlah'] ?? 0);
+
+        // Rekap: uraian mengandung "Boks" dan jumlah > 1
+        if (str_contains($uraian, 'boks') && $jumlah > 1) {
+            return 'rekap';
         }
 
-        return 'aktif';
-    }
-
-    private function lookupKey(string $value): string
-    {
-        return Str::lower(trim($value));
+        return 'detail';
     }
 
     private function buildJenisMap(): array
     {
         $map = [];
         foreach (JenisPajak::all() as $item) {
-            $map[Str::lower($item->kode)] = [
-                'id' => $item->id,
-                'label' => $item->nama_jenis_pajak . ' (' . $item->kode . ')',
-            ];
-            $map[Str::lower($item->nama_jenis_pajak)] = [
-                'id' => $item->id,
-                'label' => $item->nama_jenis_pajak . ' (' . $item->kode . ')',
-            ];
+            $map[Str::lower($item->kode)] = $item->id;
+            $map[Str::lower($item->nama_jenis_pajak)] = $item->id;
         }
 
         return $map;
@@ -265,14 +264,8 @@ class ArsipImportController extends Controller
     {
         $map = [];
         foreach (Unit::all() as $item) {
-            $map[Str::lower($item->kode_unit)] = [
-                'id' => $item->id,
-                'label' => $item->nama_unit . ' (' . $item->kode_unit . ')',
-            ];
-            $map[Str::lower($item->nama_unit)] = [
-                'id' => $item->id,
-                'label' => $item->nama_unit . ' (' . $item->kode_unit . ')',
-            ];
+            $map[Str::lower($item->kode_unit)] = $item->id;
+            $map[Str::lower($item->nama_unit)] = $item->id;
         }
 
         return $map;

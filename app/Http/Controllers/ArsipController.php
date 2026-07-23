@@ -20,34 +20,41 @@ class ArsipController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('nomor_arsip', 'like', "%{$search}%")
-                    ->orWhere('nama_wajib_pajak', 'like', "%{$search}%");
+                $q->where('kode_klasifikasi', 'like', "%{$search}%")
+                    ->orWhere('uraian_informasi_arsip', 'like', "%{$search}%")
+                    ->orWhere('nomor_arsip_berkas', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('jenis_pajak_id')) {
             $query->where('jenis_pajak_id', $request->jenis_pajak_id);
         }
-
         if ($request->filled('unit_id')) {
             $query->where('unit_id', $request->unit_id);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
-        if ($request->filled('tahun')) {
-            $query->where('tahun_arsip', $request->tahun);
+        if ($request->filled('kurun_waktu')) {
+            $query->where('kurun_waktu', $request->kurun_waktu);
+        }
+        if ($request->filled('tipe_arsip')) {
+            $query->where('tipe_arsip', $request->tipe_arsip);
+        }
+        if ($request->filled('kondisi')) {
+            $query->where('kondisi', $request->kondisi);
+        }
+        if ($request->filled('klasifikasi_keamanan')) {
+            $query->where('klasifikasi_keamanan', $request->klasifikasi_keamanan);
         }
 
         $arsips = $query->paginate(15)->withQueryString();
         $jenisPajaks = JenisPajak::orderBy('nama_jenis_pajak')->get();
         $units = Unit::orderBy('nama_unit')->get();
-        $tahuns = Arsip::select('tahun_arsip')
+        $tahuns = Arsip::select('kurun_waktu')
             ->distinct()
-            ->orderByDesc('tahun_arsip')
-            ->pluck('tahun_arsip');
+            ->orderByDesc('kurun_waktu')
+            ->pluck('kurun_waktu');
 
         return view('arsips.index', compact('arsips', 'jenisPajaks', 'units', 'tahuns'));
     }
@@ -63,6 +70,16 @@ class ArsipController extends Controller
     public function store(StoreArsipRequest $request)
     {
         $data = $request->safe()->except(['file_arsip']);
+
+        if (empty($data['satuan'])) {
+            $data['satuan'] = 'Berkas';
+        }
+        if (empty($data['kondisi'])) {
+            $data['kondisi'] = 'Baik';
+        }
+        if (empty($data['klasifikasi_keamanan'])) {
+            $data['klasifikasi_keamanan'] = 'Terbuka';
+        }
 
         if ($request->hasFile('file_arsip')) {
             $uploaded = $this->storeFile($request->file('file_arsip'));
@@ -136,15 +153,13 @@ class ArsipController extends Controller
         $extension = strtolower($file->getClientOriginalExtension());
         $basename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
         $filename = time() . '_' . ($basename ?: 'arsip') . '.' . $extension;
-
         $file->storeAs('arsip', $filename, 'public');
 
         $mime = $file->getMimeType();
-        $tipe = str_starts_with($mime, 'image/') ? 'image' : 'pdf';
 
         return [
             'path' => $filename,
-            'tipe' => $tipe,
+            'tipe' => str_starts_with($mime, 'image/') ? 'image' : 'pdf',
         ];
     }
 

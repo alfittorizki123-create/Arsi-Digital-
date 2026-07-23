@@ -23,17 +23,17 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-stack-md mb-stack-lg">
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Arsip</p>
+                <p class="text-label-md text-on-surface-variant">Total Row Arsip</p>
                 <span class="material-symbols-outlined text-primary">inventory_2</span>
             </div>
             <p class="text-display-md text-on-surface mt-2">{{ number_format($stats['total_arsip']) }}</p>
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Arsip Aktif</p>
-                <span class="material-symbols-outlined text-primary">check_circle</span>
+                <p class="text-label-md text-on-surface-variant">Total Berkas (Σ jumlah)</p>
+                <span class="material-symbols-outlined text-primary">layers</span>
             </div>
-            <p class="text-display-md text-primary mt-2">{{ number_format($stats['arsip_aktif']) }}</p>
+            <p class="text-display-md text-primary mt-2">{{ number_format($stats['total_berkas']) }}</p>
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
@@ -44,7 +44,7 @@
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Unit/UPT</p>
+                <p class="text-label-md text-on-surface-variant">Total Unit/UPT/UP</p>
                 <span class="material-symbols-outlined text-primary">apartment</span>
             </div>
             <p class="text-display-md text-on-surface mt-2">{{ number_format($stats['total_unit']) }}</p>
@@ -60,10 +60,10 @@
             <table class="w-full text-left border-collapse">
                 <thead class="bg-surface border-b border-outline-variant">
                     <tr>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nomor Arsip</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nama WP</th>
-                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Jenis</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Kode</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Uraian</th>
                         <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Unit</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Tipe</th>
                         <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Status</th>
                     </tr>
                 </thead>
@@ -71,16 +71,22 @@
                     @forelse ($arsipTerbaru as $arsip)
                         <tr class="hover:bg-surface-container/50 transition-colors">
                             <td class="py-3 px-4">
-                                <a href="{{ route('arsips.show', $arsip) }}" class="text-body-md font-medium text-primary hover:underline">{{ $arsip->nomor_arsip }}</a>
+                                <a href="{{ route('arsips.show', $arsip) }}" class="text-body-md font-medium text-primary hover:underline">{{ $arsip->kode_klasifikasi ?? '-' }}</a>
                             </td>
-                            <td class="py-3 px-4 text-body-md text-on-surface">{{ $arsip->nama_wajib_pajak }}</td>
-                            <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $arsip->jenisPajak->kode ?? '-' }}</td>
+                            <td class="py-3 px-4 text-body-md text-on-surface max-w-xs truncate">{{ $arsip->uraian_informasi_arsip ?? '-' }}</td>
                             <td class="py-3 px-4 text-body-md text-on-surface-variant">{{ $arsip->unit->nama_unit ?? '-' }}</td>
                             <td class="py-3 px-4">
-                                @if ($arsip->status === 'aktif')
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold tracking-wide uppercase bg-primary-fixed text-on-primary-fixed">Aktif</span>
+                                @if ($arsip->tipe_arsip === 'rekap')
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-tertiary-fixed text-on-tertiary-fixed">Rekap</span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold tracking-wide uppercase bg-surface-container-highest text-on-surface-variant">Inaktif</span>
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-secondary-fixed text-on-secondary-fixed">Detail</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4">
+                                @if ($arsip->status === 'aktif')
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-primary-fixed text-on-primary-fixed">Aktif</span>
+                                @else
+                                    <span class="inline-flex px-2 py-1 rounded text-[11px] font-bold uppercase bg-surface-container-highest text-on-surface-variant">Inaktif</span>
                                 @endif
                             </td>
                         </tr>

@@ -9,19 +9,27 @@ class Arsip extends Model
     protected $table = 'arsips';
 
     protected $fillable = [
-        'nomor_arsip',
-        'jenis_pajak_id',
-        'nama_wajib_pajak',
-        'tahun_arsip',
-        'nomor_rak',
+        'tipe_arsip',
+        'kode_klasifikasi',
+        'nomor_arsip_berkas',
+        'uraian_informasi_arsip',
+        'kurun_waktu',
+        'jumlah',
+        'satuan',
+        'tingkat_perkembangan',
+        'nomor_boks',
+        'kondisi',
+        'klasifikasi_keamanan',
         'status',
         'unit_id',
+        'jenis_pajak_id',
         'path_file',
         'tipe_file',
     ];
 
     protected $casts = [
-        'tahun_arsip' => 'integer',
+        'kurun_waktu' => 'integer',
+        'jumlah' => 'integer',
     ];
 
     public function jenisPajak()

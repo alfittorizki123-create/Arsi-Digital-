@@ -15,13 +15,20 @@ class StoreArsipRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nomor_arsip' => ['required', 'string', 'max:100', 'unique:arsips,nomor_arsip'],
-            'jenis_pajak_id' => ['required', 'exists:jenis_pajaks,id'],
-            'nama_wajib_pajak' => ['required', 'string', 'max:255'],
-            'tahun_arsip' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
-            'nomor_rak' => ['nullable', 'string', 'max:50'],
+            'tipe_arsip' => ['required', Rule::in(['rekap', 'detail'])],
+            'kode_klasifikasi' => ['nullable', 'string', 'max:50'],
+            'nomor_arsip_berkas' => ['nullable', 'string', 'max:100'],
+            'uraian_informasi_arsip' => ['nullable', 'string'],
+            'kurun_waktu' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
+            'jumlah' => ['nullable', 'integer', 'min:0'],
+            'satuan' => ['nullable', 'string', 'max:20'],
+            'tingkat_perkembangan' => ['nullable', Rule::in(['Asli', 'Copy', 'Asli/Copy'])],
+            'nomor_boks' => ['nullable', 'string', 'max:50'],
+            'kondisi' => ['nullable', Rule::in(['Baik', 'Rusak'])],
+            'klasifikasi_keamanan' => ['nullable', Rule::in(['Terbuka', 'Terbatas', 'Rahasia'])],
             'status' => ['required', Rule::in(['aktif', 'inaktif'])],
-            'unit_id' => ['required', 'exists:units,id'],
+            'unit_id' => ['nullable', 'exists:units,id'],
+            'jenis_pajak_id' => ['nullable', 'exists:jenis_pajaks,id'],
             'file_arsip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ];
     }
@@ -29,13 +36,20 @@ class StoreArsipRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'nomor_arsip' => 'nomor arsip',
-            'jenis_pajak_id' => 'jenis pajak',
-            'nama_wajib_pajak' => 'nama wajib pajak',
-            'tahun_arsip' => 'tahun arsip',
-            'nomor_rak' => 'nomor rak',
+            'tipe_arsip' => 'tipe arsip',
+            'kode_klasifikasi' => 'kode klasifikasi',
+            'nomor_arsip_berkas' => 'nomor arsip/berkas',
+            'uraian_informasi_arsip' => 'uraian informasi arsip',
+            'kurun_waktu' => 'kurun waktu',
+            'jumlah' => 'jumlah',
+            'satuan' => 'satuan',
+            'tingkat_perkembangan' => 'tingkat perkembangan',
+            'nomor_boks' => 'nomor boks',
+            'kondisi' => 'kondisi',
+            'klasifikasi_keamanan' => 'klasifikasi keamanan',
             'status' => 'status',
             'unit_id' => 'unit/UPT',
+            'jenis_pajak_id' => 'jenis pajak',
             'file_arsip' => 'file arsip',
         ];
     }

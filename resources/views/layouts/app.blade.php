@@ -17,8 +17,8 @@
         <div class="px-2 mb-0" x-show="sidebarOpen">
             <img src="{{ asset('images/logo-bapenda.png') }}" alt="Logo" class="w-full max-w-[120px] h-auto object-contain mx-auto">
         </div>
-        <div class="px-2 mb-0 flex justify-center" x-show="!sidebarOpen" @@click="sidebarOpen = true">
-            <span class="material-symbols-outlined text-on-primary text-2xl cursor-pointer hover:text-on-primary/80">menu</span>
+        <div class="px-1 mb-0 flex justify-center" x-show="!sidebarOpen" @@click="sidebarOpen = true">
+            <img src="{{ asset('images/logo-bapenda.png') }}" alt="Logo" class="w-12 h-12 object-contain cursor-pointer">
         </div>
 
         {{-- Divider --}}
