@@ -13,16 +13,16 @@ class UnitController extends Controller
         $data = $request->validate([
             'nama_unit' => ['required', 'string', 'max:255'],
             'kode_unit' => ['required', 'string', 'max:50', 'unique:units,kode_unit'],
+            'nomor_rak' => ['nullable', 'string', 'max:100'],
         ], [], [
             'nama_unit' => 'nama unit',
             'kode_unit' => 'kode unit',
+            'nomor_rak' => 'nomor rak',
         ]);
 
         Unit::create($data);
 
-        return redirect()
-            ->route('pengaturan', ['tab' => 'unit'])
-            ->with('success', 'Unit/UPT berhasil ditambahkan.');
+        return back()->with('success', 'Unit/UPT berhasil ditambahkan.');
     }
 
     public function update(Request $request, Unit $unit)
@@ -30,30 +30,26 @@ class UnitController extends Controller
         $data = $request->validate([
             'nama_unit' => ['required', 'string', 'max:255'],
             'kode_unit' => ['required', 'string', 'max:50', Rule::unique('units', 'kode_unit')->ignore($unit->id)],
+            'nomor_rak' => ['nullable', 'string', 'max:100'],
         ], [], [
             'nama_unit' => 'nama unit',
             'kode_unit' => 'kode unit',
+            'nomor_rak' => 'nomor rak',
         ]);
 
         $unit->update($data);
 
-        return redirect()
-            ->route('pengaturan', ['tab' => 'unit'])
-            ->with('success', 'Unit/UPT berhasil diperbarui.');
+        return back()->with('success', 'Unit/UPT berhasil diperbarui.');
     }
 
     public function destroy(Unit $unit)
     {
         if ($unit->arsips()->exists()) {
-            return redirect()
-                ->route('pengaturan', ['tab' => 'unit'])
-                ->with('error', 'Unit/UPT tidak dapat dihapus karena masih dipakai data arsip.');
+            return back()->with('error', 'Unit/UPT tidak dapat dihapus karena masih dipakai data arsip.');
         }
 
         $unit->delete();
 
-        return redirect()
-            ->route('pengaturan', ['tab' => 'unit'])
-            ->with('success', 'Unit/UPT berhasil dihapus.');
+        return back()->with('success', 'Unit/UPT berhasil dihapus.');
     }
 }

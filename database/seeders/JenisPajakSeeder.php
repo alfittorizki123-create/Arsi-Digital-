@@ -10,18 +10,11 @@ class JenisPajakSeeder extends Seeder
     public function run(): void
     {
         $jenis = [
-            ['nama_jenis_pajak' => 'Pajak Kendaraan Bermotor', 'kode' => 'PKB'],
-            ['nama_jenis_pajak' => 'Pajak Alat Berat', 'kode' => 'PAB'],
-            ['nama_jenis_pajak' => 'Pajak Bahan Bakar Kendaraan Bermotor', 'kode' => 'PBBKB'],
-            ['nama_jenis_pajak' => 'Pajak Air Tanah', 'kode' => 'PAT'],
-            ['nama_jenis_pajak' => 'Pajak Mineral Bukan Logam dan Batuan', 'kode' => 'PMBLB'],
-            ['nama_jenis_pajak' => 'Pajak Hotel', 'kode' => 'PH'],
-            ['nama_jenis_pajak' => 'Pajak Restoran', 'kode' => 'PR'],
-            ['nama_jenis_pajak' => 'Pajak Hiburan', 'kode' => 'PHB'],
-            ['nama_jenis_pajak' => 'Pajak Reklame', 'kode' => 'PRK'],
-            ['nama_jenis_pajak' => 'Pajak Penerangan Jalan', 'kode' => 'PPJ'],
-            ['nama_jenis_pajak' => 'Pajak Parkir', 'kode' => 'PPK'],
-            ['nama_jenis_pajak' => 'Pajak Bumi dan Bangunan Perdesaan', 'kode' => 'PBP'],
+            ['nama_jenis_pajak' => 'Pajak Kendaraan Bermotor (PKB)', 'kode' => 'PKB'],
+            ['nama_jenis_pajak' => 'Bea Balik Nama Kendaraan Bermotor (BBNKB)', 'kode' => 'BBNKB'],
+            ['nama_jenis_pajak' => 'Pajak Bahan Bakar Kendaraan Bermotor (PBBKB)', 'kode' => 'PBBKB'],
+            ['nama_jenis_pajak' => 'Pajak Air Permukaan (PAP)', 'kode' => 'PAP'],
+            ['nama_jenis_pajak' => 'Pajak Rokok', 'kode' => 'PR'],
         ];
 
         foreach ($jenis as $item) {

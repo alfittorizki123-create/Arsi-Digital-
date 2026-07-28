@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\ArsipFile;
 
 class StoreArsipRequest extends FormRequest
 {
@@ -20,6 +21,7 @@ class StoreArsipRequest extends FormRequest
             'nomor_arsip_berkas' => ['nullable', 'string', 'max:100'],
             'uraian_informasi_arsip' => ['nullable', 'string'],
             'kurun_waktu' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
+            'bulan' => ['nullable', 'integer', 'min:1', 'max:12'],
             'jumlah' => ['nullable', 'integer', 'min:0'],
             'satuan' => ['nullable', 'string', 'max:20'],
             'tingkat_perkembangan' => ['nullable', Rule::in(['Asli', 'Copy', 'Asli/Copy'])],
@@ -29,7 +31,18 @@ class StoreArsipRequest extends FormRequest
             'status' => ['required', Rule::in(['aktif', 'inaktif'])],
             'unit_id' => ['nullable', 'exists:units,id'],
             'jenis_pajak_id' => ['nullable', 'exists:jenis_pajaks,id'],
-            'file_arsip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'jenis_pajak_ids' => ['nullable', 'array'],
+            'jenis_pajak_ids.*' => ['nullable', 'exists:jenis_pajaks,id'],
+            'file_arsip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx', 'max:102400'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx', 'max:102400'],
+            'uploaded_file_ids' => ['nullable', 'array'],
+            'uploaded_file_ids.*' => ['nullable', 'integer', function ($attribute, $value, $fail) {
+                $exists = ArsipFile::where('id', $value)->whereNull('arsip_id')->exists();
+                if (!$exists) {
+                    $fail('File ID #' . $value . ' tidak valid atau sudah terasosiasi dengan arsip lain.');
+                }
+            }],
         ];
     }
 

@@ -14,7 +14,7 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
-        $filters = $request->only(['jenis_pajak_id', 'unit_id', 'status', 'kurun_waktu', 'tipe_arsip', 'kondisi', 'klasifikasi_keamanan']);
+        $filters = $request->only(['jenis_pajak_id', 'unit_id', 'status', 'kurun_waktu', 'bulan', 'tipe_arsip', 'kondisi', 'klasifikasi_keamanan']);
 
         $query = Arsip::with(['jenisPajak', 'unit'])->latest();
         $this->applyFilters($query, $filters);
@@ -26,6 +26,7 @@ class LaporanController extends Controller
             ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->where('arsips.jenis_pajak_id', $v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('arsips.status', $v))
             ->when($filters['kurun_waktu'] ?? null, fn ($q, $v) => $q->where('arsips.kurun_waktu', $v))
+            ->when($filters['bulan'] ?? null, fn ($q, $v) => $q->where('arsips.bulan', $v))
             ->when($filters['tipe_arsip'] ?? null, fn ($q, $v) => $q->where('arsips.tipe_arsip', $v))
             ->when($filters['kondisi'] ?? null, fn ($q, $v) => $q->where('arsips.kondisi', $v))
             ->when($filters['klasifikasi_keamanan'] ?? null, fn ($q, $v) => $q->where('arsips.klasifikasi_keamanan', $v))
@@ -44,6 +45,7 @@ class LaporanController extends Controller
             ->when($filters['kondisi'] ?? null, fn ($q, $v) => $q->where('kondisi', $v))
             ->when($filters['klasifikasi_keamanan'] ?? null, fn ($q, $v) => $q->where('klasifikasi_keamanan', $v))
             ->when($filters['kurun_waktu'] ?? null, fn ($q, $v) => $q->where('kurun_waktu', $v))
+            ->when($filters['bulan'] ?? null, fn ($q, $v) => $q->where('bulan', $v))
             ->groupBy('kurun_waktu')
             ->orderByDesc('kurun_waktu')
             ->get();
@@ -57,6 +59,7 @@ class LaporanController extends Controller
             ->when($filters['kondisi'] ?? null, fn ($q, $v) => $q->where('kondisi', $v))
             ->when($filters['klasifikasi_keamanan'] ?? null, fn ($q, $v) => $q->where('klasifikasi_keamanan', $v))
             ->when($filters['tipe_arsip'] ?? null, fn ($q, $v) => $q->where('tipe_arsip', $v))
+            ->when($filters['bulan'] ?? null, fn ($q, $v) => $q->where('bulan', $v))
             ->groupBy('tipe_arsip')
             ->get();
 
@@ -71,12 +74,79 @@ class LaporanController extends Controller
         $units = Unit::orderBy('nama_unit')->get();
         $tahuns = Arsip::select('kurun_waktu')->distinct()->orderByDesc('kurun_waktu')->pluck('kurun_waktu');
 
+        // Build detailed Rekap Arsip per Unit (like Excel)
+        $unitIdsQuery = Arsip::query()->whereNotNull('unit_id');
+        $this->applyFilters($unitIdsQuery, $filters);
+        $activeUnitIds = $unitIdsQuery->distinct()->pluck('unit_id');
+
+        $rekapArsipUnits = Unit::whereIn('id', $activeUnitIds)->orderBy('nama_unit')->get()->map(function($unit) use ($filters) {
+            $query = Arsip::where('unit_id', $unit->id);
+            $this->applyFilters($query, $filters);
+            $items = $query->get();
+
+            $itemsWithRowNo = $items->values()->map(function($it, $idx) {
+                $it->table_row_no = $idx + 1;
+                return $it;
+            });
+            $boksGroups = $itemsWithRowNo->groupBy(function($item) {
+                $bNum = $item->boks ? $item->boks->nomor_boks : ($item->nomor_boks ?: null);
+                return $bNum ? "BOKS_{$bNum}" : 'TANPA_BOKS';
+            });
+
+            $rincianParts = [];
+            $boksGlobalNums = [];
+            $rakNames = [];
+
+            foreach ($boksGroups as $groupKey => $bItems) {
+                $bObj = $bItems->first()->boks;
+                $bNum = $bObj ? $bObj->nomor_boks : ($bItems->first()->nomor_boks ?? null);
+
+                $explicitNos = $bItems->pluck('nomor_arsip_berkas')->map(fn($v) => (int)$v)->filter(fn($v) => $v > 0)->sort()->values();
+                if ($explicitNos->isNotEmpty()) {
+                    $minNo = $explicitNos->first();
+                    $maxNo = $explicitNos->last();
+                } else {
+                    $rowNos = $bItems->pluck('table_row_no')->sort()->values();
+                    $minNo = $rowNos->first();
+                    $maxNo = $rowNos->last();
+                }
+
+                $rangeStr = ($minNo === $maxNo) ? "No. {$minNo}" : "No. {$minNo}-{$maxNo}";
+                if ($bNum) {
+                    $rincianParts[] = "Boks {$bNum} : {$rangeStr}";
+                    $boksGlobalNums[] = "Boks {$bNum}";
+                } else {
+                    $rincianParts[] = "{$rangeStr}";
+                }
+
+                if ($bObj && $bObj->rak) {
+                    $rakNames[] = "Rak {$bObj->rak->nomor_rak}";
+                }
+            }
+
+            $rincianBoksStr = implode('; ', $rincianParts);
+            $totalBerkas = $items->count();
+            $kurunWaktuStr = $items->pluck('kurun_waktu')->unique()->filter()->implode(', ');
+            $boksStr = implode(', ', array_unique($boksGlobalNums)) ?: '-';
+            $rakStr = implode(', ', array_unique($rakNames)) ?: ($unit->nomor_rak ?: '-');
+
+            return (object) [
+                'unit' => $unit,
+                'rincian_boks' => $rincianBoksStr,
+                'total_berkas' => $totalBerkas,
+                'kurun_waktu' => $kurunWaktuStr,
+                'nomor_boks' => $boksStr,
+                'lokasi_rak' => $rakStr,
+            ];
+        });
+
         return view('laporan.index', compact(
             'arsips',
             'rekapUnit',
             'rekapTahun',
             'rekapTipe',
             'rekapStatus',
+            'rekapArsipUnits',
             'jenisPajaks',
             'units',
             'tahuns',
@@ -86,7 +156,7 @@ class LaporanController extends Controller
 
     public function export(Request $request)
     {
-        $filters = $request->only(['jenis_pajak_id', 'unit_id', 'status', 'kurun_waktu', 'tipe_arsip', 'kondisi', 'klasifikasi_keamanan']);
+        $filters = $request->only(['jenis_pajak_id', 'unit_id', 'status', 'kurun_waktu', 'bulan', 'tipe_arsip', 'kondisi', 'klasifikasi_keamanan', 'selected_ids']);
         $filename = 'laporan-arsip-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new ArsipExport($filters), $filename);
@@ -101,5 +171,6 @@ class LaporanController extends Controller
         if (! empty($filters['tipe_arsip'])) $query->where('tipe_arsip', $filters['tipe_arsip']);
         if (! empty($filters['kondisi'])) $query->where('kondisi', $filters['kondisi']);
         if (! empty($filters['klasifikasi_keamanan'])) $query->where('klasifikasi_keamanan', $filters['klasifikasi_keamanan']);
+        if (! empty($filters['bulan'])) $query->where('bulan', $filters['bulan']);
     }
 }

@@ -3,20 +3,17 @@
 @section('title', 'Laporan')
 
 @section('content')
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-lg">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-md">
         <div>
             <h2 class="font-display-md text-display-md text-on-surface">Laporan Arsip</h2>
-            <p class="text-body-md text-on-surface-variant mt-1">Rekapitulasi dan ekspor data arsip pajak daerah.</p>
+            <p class="text-body-md text-on-surface-variant mt-1">Rekapitulasi data arsip pajak daerah.</p>
         </div>
-        <a href="{{ route('laporan.export', request()->query()) }}"
-           class="flex items-center gap-2 px-4 py-2 rounded bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary-container/90 transition-colors shadow-sm">
-            <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
-            Export Excel
-        </a>
     </div>
 
+
+
     <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md mb-stack-lg shadow-sm">
-        <form method="GET" action="{{ route('laporan') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-stack-md">
+        <form id="filter-form" method="GET" action="{{ route('laporan') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-stack-md">
             <div>
                 <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Jenis Pajak</label>
                 <select name="jenis_pajak_id" class="w-full px-3 py-2 border border-outline-variant rounded bg-surface focus:outline-none focus:border-primary text-body-md">
@@ -61,6 +58,15 @@
                 </select>
             </div>
             <div>
+                <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Bulan</label>
+                <select name="bulan" class="w-full px-3 py-2 border border-outline-variant rounded bg-surface focus:outline-none focus:border-primary text-body-md">
+                    <option value="">Semua</option>
+                    @foreach(['1'=>'Januari', '2'=>'Februari', '3'=>'Maret', '4'=>'April', '5'=>'Mei', '6'=>'Juni', '7'=>'Juli', '8'=>'Agustus', '9'=>'September', '10'=>'Oktober', '11'=>'November', '12'=>'Desember'] as $num => $name)
+                        <option value="{{ $num }}" @selected(($filters['bulan'] ?? '') == $num)>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
                 <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Kondisi</label>
                 <select name="kondisi" class="w-full px-3 py-2 border border-outline-variant rounded bg-surface focus:outline-none focus:border-primary text-body-md">
                     <option value="">Semua</option>
@@ -77,9 +83,9 @@
                     <option value="Rahasia" @selected(($filters['klasifikasi_keamanan'] ?? '') === 'Rahasia')>Rahasia</option>
                 </select>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end gap-2 md:col-span-2">
                 <a href="{{ route('laporan') }}" class="px-4 py-2 rounded border border-outline-variant text-on-surface-variant text-label-md hover:bg-surface-container">Reset</a>
-                <button type="submit" class="px-4 py-2 rounded bg-primary-container text-on-primary text-label-md hover:bg-primary-container/90">Terapkan</button>
+                <button type="submit" class="px-4 py-2 rounded bg-primary text-on-primary font-bold text-label-md hover:bg-primary/90">Terapkan Filter</button>
             </div>
         </form>
     </div>
@@ -178,6 +184,60 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    {{-- TABEL REKAP ARSIP PER UNIT (FORMAT EXCEL BAPENDA) --}}
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm mb-stack-lg">
+        <div class="px-stack-md py-4 bg-surface-container/40 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h3 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">table_chart</span>
+                Rekapitulasi Pemindahan Arsip Per Unit (Format Rekap Excel Bapenda)
+            </h3>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-on-surface-variant font-medium">Total: {{ $rekapArsipUnits->count() }} Unit Terdaftar</span>
+                <a href="{{ route('laporan.export', request()->query()) }}"
+                   style="background-color: #059669; color: #ffffff;"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs hover:opacity-90 transition-all shadow-md">
+                    <span class="material-symbols-outlined text-sm">download</span>
+                    <span>Unduh Excel Rekap Ini</span>
+                </a>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-surface border-b border-outline-variant">
+                    <tr>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-center w-12">No</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nama Unit & Rincian Boks</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-center">Jumlah Berkas</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-center">Kurun Waktu</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-center">No. Boks</th>
+                        <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-center">Lokasi Rak</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant text-xs">
+                    @forelse ($rekapArsipUnits as $index => $r)
+                        <tr class="hover:bg-surface-container/50 transition-colors">
+                            <td class="py-3 px-4 text-center font-bold text-on-surface-variant">{{ $index + 1 }}</td>
+                            <td class="py-3 px-4 font-semibold text-on-surface">
+                                {{ $r->unit->nama_unit }}
+                                @if($r->rincian_boks)
+                                    <span class="font-normal text-on-surface-variant text-[11px] block mt-0.5">( {{ $r->rincian_boks }} )</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4 text-center font-bold text-primary">{{ number_format($r->total_berkas) }} Berkas</td>
+                            <td class="py-3 px-4 text-center text-on-surface-variant">{{ $r->kurun_waktu ?: '-' }}</td>
+                            <td class="py-3 px-4 text-center text-on-surface-variant font-medium">{{ $r->nomor_boks }}</td>
+                            <td class="py-3 px-4 text-center text-on-surface-variant">{{ $r->lokasi_rak }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-on-surface-variant">Belum ada data rekap arsip.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

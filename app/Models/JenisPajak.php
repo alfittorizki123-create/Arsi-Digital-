@@ -14,4 +14,9 @@ class JenisPajak extends Model
     {
         return $this->hasMany(Arsip::class);
     }
+
+    public function arsipsPivot()
+    {
+        return $this->belongsToMany(Arsip::class, 'arsip_jenis_pajak', 'jenis_pajak_id', 'arsip_id')->withTimestamps();
+    }
 }

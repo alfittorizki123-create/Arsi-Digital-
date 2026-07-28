@@ -14,6 +14,7 @@ class Arsip extends Model
         'nomor_arsip_berkas',
         'uraian_informasi_arsip',
         'kurun_waktu',
+        'bulan',
         'jumlah',
         'satuan',
         'tingkat_perkembangan',
@@ -22,6 +23,7 @@ class Arsip extends Model
         'klasifikasi_keamanan',
         'status',
         'unit_id',
+        'boks_id',
         'jenis_pajak_id',
         'path_file',
         'tipe_file',
@@ -29,6 +31,7 @@ class Arsip extends Model
 
     protected $casts = [
         'kurun_waktu' => 'integer',
+        'bulan' => 'integer',
         'jumlah' => 'integer',
     ];
 
@@ -37,9 +40,29 @@ class Arsip extends Model
         return $this->belongsTo(JenisPajak::class, 'jenis_pajak_id');
     }
 
+    public function jenisPajaks()
+    {
+        return $this->belongsToMany(JenisPajak::class, 'arsip_jenis_pajak', 'arsip_id', 'jenis_pajak_id')->withTimestamps();
+    }
+
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_id');
+    }
+
+    public function boks()
+    {
+        return $this->belongsTo(Boks::class, 'boks_id');
+    }
+
+    public function files()
+    {
+        return $this->hasMany(ArsipFile::class, 'arsip_id');
+    }
+
+    public function peminjamen()
+    {
+        return $this->hasMany(Peminjaman::class, 'arsip_id');
     }
 
     public function getFileUrlAttribute(): ?string

@@ -10,16 +10,6 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="mb-stack-md px-4 py-3 rounded-lg bg-primary-fixed text-on-primary-fixed border border-primary-fixed-dim">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="mb-stack-md px-4 py-3 rounded-lg bg-error-container text-on-error-container">
-            {{ session('error') }}
-        </div>
-    @endif
 
     {{-- Tabs --}}
     <div class="flex flex-wrap gap-2 mb-stack-lg border-b border-outline-variant pb-0">
@@ -38,41 +28,47 @@
     </div>
 
     @if ($tab === 'jenis-pajak')
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-stack-lg">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-stack-lg" x-data="{ searchJenis: '', editJenisModal: false, activeJenis: null }">
             <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-lg shadow-sm h-fit">
                 <h3 class="text-headline-sm font-bold text-on-surface mb-stack-md">
-                    {{ $editJenis ? 'Edit Jenis Pajak' : 'Tambah Jenis Pajak' }}
+                    Tambah Jenis Pajak
                 </h3>
-                <form method="POST" action="{{ $editJenis ? route('jenis-pajak.update', $editJenis) : route('jenis-pajak.store') }}">
+                <form method="POST" action="{{ route('jenis-pajak.store') }}">
                     @csrf
-                    @if ($editJenis) @method('PUT') @endif
                     <div class="space-y-3">
                         <div>
                             <label class="block text-label-md text-on-surface-variant mb-1">Nama Jenis Pajak <span class="text-error">*</span></label>
-                            <input type="text" name="nama_jenis_pajak" value="{{ old('nama_jenis_pajak', $editJenis->nama_jenis_pajak ?? '') }}"
+                            <input type="text" name="nama_jenis_pajak" value="{{ old('nama_jenis_pajak') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('nama_jenis_pajak') border-error @else border-outline-variant @enderror" required>
                             @error('nama_jenis_pajak') <p class="text-sm text-error mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-label-md text-on-surface-variant mb-1">Kode <span class="text-error">*</span></label>
-                            <input type="text" name="kode" value="{{ old('kode', $editJenis->kode ?? '') }}"
+                            <input type="text" name="kode" value="{{ old('kode') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('kode') border-error @else border-outline-variant @enderror"
                                    placeholder="Contoh: PKB" required>
                             @error('kode') <p class="text-sm text-error mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div class="flex gap-2 pt-2">
-                            @if ($editJenis)
-                                <a href="{{ route('pengaturan', ['tab' => 'jenis-pajak']) }}" class="px-4 py-2 rounded border border-outline-variant text-on-surface-variant text-label-md">Batal</a>
-                            @endif
                             <button type="submit" class="px-4 py-2 rounded bg-primary-container text-on-primary text-label-md hover:bg-primary-container/90">
-                                {{ $editJenis ? 'Simpan Perubahan' : 'Tambah' }}
+                                Tambah
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
 
-            <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
+            <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm flex flex-col">
+                <div class="p-3 border-b border-outline-variant bg-surface flex items-center gap-2">
+                    <div class="relative w-full">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-base">search</span>
+                        <input type="text" x-model="searchJenis" placeholder="Cari jenis pajak atau kode (misal: PKB, Air Permukaan)..."
+                               class="w-full pl-9 pr-8 py-2 border border-outline-variant rounded-lg bg-surface text-xs focus:outline-none focus:border-primary text-on-surface">
+                        <button type="button" x-show="searchJenis.length > 0" @@click="searchJenis = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-surface border-b border-outline-variant">
@@ -85,19 +81,20 @@
                         </thead>
                         <tbody class="divide-y divide-outline-variant">
                             @forelse ($jenisPajaks as $jp)
-                                <tr class="hover:bg-surface-container/50">
+                                <tr class="hover:bg-surface-container/50 transition-colors"
+                                    x-show="!searchJenis || '{{ strtolower($jp->nama_jenis_pajak . ' ' . $jp->kode) }}'.includes(searchJenis.toLowerCase())">
                                     <td class="py-3 px-4 font-medium text-on-surface">{{ $jp->kode }}</td>
                                     <td class="py-3 px-4 text-on-surface">{{ $jp->nama_jenis_pajak }}</td>
                                     <td class="py-3 px-4 text-on-surface-variant">{{ $jp->arsips_count }} arsip</td>
-                                    <td class="py-3 px-4 text-right space-x-1">
-                                        <a href="{{ route('pengaturan', ['tab' => 'jenis-pajak', 'edit_jenis' => $jp->id]) }}" class="inline-flex p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 rounded" title="Edit">
-                                            <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
-                                        </a>
-                                        <form action="{{ route('jenis-pajak.destroy', $jp) }}" method="POST" class="inline" onsubmit="return confirm('Hapus jenis pajak {{ $jp->kode }}?')">
+                                    <td class="py-3 px-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-1.5">
+                                        <button type="button" @@click="activeJenis = { id: {{ $jp->id }}, nama_jenis_pajak: {{ json_encode($jp->nama_jenis_pajak) }}, kode: {{ json_encode($jp->kode) }} }; editJenisModal = true" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm" title="Edit">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">edit</span> Edit
+                                        </button>
+                                        <form action="{{ route('jenis-pajak.destroy', $jp) }}" method="POST" class="inline" data-confirm="Hapus jenis pajak {{ $jp->kode }}?">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded" title="Hapus">
-                                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
                                             </button>
                                         </form>
                                     </td>
@@ -109,43 +106,77 @@
                     </table>
                 </div>
             </div>
+
+            {{-- MODAL EDIT JENIS PAJAK --}}
+            <div x-show="editJenisModal" class="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4" x-cloak>
+                <div class="bg-surface rounded-xl border border-outline-variant shadow-lg max-w-md w-full p-stack-lg" @@click.outside="editJenisModal = false">
+                    <h3 class="font-display-md text-title-md mb-4 text-on-surface">Edit Jenis Pajak</h3>
+                    <form x-bind:action="'{{ url('pengaturan/jenis-pajak') }}/' + (activeJenis ? activeJenis.id : '')" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="mb-4">
+                            <label class="block text-label-md font-bold mb-1">Nama Jenis Pajak <span class="text-error">*</span></label>
+                            <input type="text" name="nama_jenis_pajak" x-bind:value="activeJenis ? activeJenis.nama_jenis_pajak : ''" required
+                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-label-md font-bold mb-1">Kode <span class="text-error">*</span></label>
+                            <input type="text" name="kode" x-bind:value="activeJenis ? activeJenis.kode : ''" required
+                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @@click="editJenisModal = false" class="px-4 py-2 border rounded text-on-surface-variant">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-on-primary rounded font-bold">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     @elseif ($tab === 'unit')
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-stack-lg">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-stack-lg" x-data="{ searchUnit: '', editUnitModal: false, activeUnit: null }">
             <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-lg shadow-sm h-fit">
                 <h3 class="text-headline-sm font-bold text-on-surface mb-stack-md">
-                    {{ $editUnit ? 'Edit Unit/UPT' : 'Tambah Unit/UPT' }}
+                    Tambah Unit/UPT
                 </h3>
-                <form method="POST" action="{{ $editUnit ? route('unit.update', $editUnit) : route('unit.store') }}">
+                <form method="POST" action="{{ route('unit.store') }}">
                     @csrf
-                    @if ($editUnit) @method('PUT') @endif
                     <div class="space-y-3">
                         <div>
                             <label class="block text-label-md text-on-surface-variant mb-1">Nama Unit <span class="text-error">*</span></label>
-                            <input type="text" name="nama_unit" value="{{ old('nama_unit', $editUnit->nama_unit ?? '') }}"
+                            <input type="text" name="nama_unit" value="{{ old('nama_unit') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('nama_unit') border-error @else border-outline-variant @enderror" required>
                             @error('nama_unit') <p class="text-sm text-error mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-label-md text-on-surface-variant mb-1">Kode Unit <span class="text-error">*</span></label>
-                            <input type="text" name="kode_unit" value="{{ old('kode_unit', $editUnit->kode_unit ?? '') }}"
+                            <input type="text" name="kode_unit" value="{{ old('kode_unit') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('kode_unit') border-error @else border-outline-variant @enderror"
                                    placeholder="Contoh: UPT-051" required>
                             @error('kode_unit') <p class="text-sm text-error mt-1">{{ $message }}</p> @enderror
                         </div>
+
                         <div class="flex gap-2 pt-2">
-                            @if ($editUnit)
-                                <a href="{{ route('pengaturan', ['tab' => 'unit']) }}" class="px-4 py-2 rounded border border-outline-variant text-on-surface-variant text-label-md">Batal</a>
-                            @endif
                             <button type="submit" class="px-4 py-2 rounded bg-primary-container text-on-primary text-label-md hover:bg-primary-container/90">
-                                {{ $editUnit ? 'Simpan Perubahan' : 'Tambah' }}
+                                Tambah
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
 
-            <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
+            <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm flex flex-col">
+                {{-- Search Box di Atas Tabel Nama Unit --}}
+                <div class="p-3 border-b border-outline-variant bg-surface flex items-center gap-2">
+                    <div class="relative w-full">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-base">search</span>
+                        <input type="text" x-model="searchUnit" placeholder="Cari nama unit atau kode unit (misal: Pekanbaru, UPT-036)..."
+                               class="w-full pl-9 pr-8 py-2 border border-outline-variant rounded-lg bg-surface text-xs focus:outline-none focus:border-primary text-on-surface">
+                        <button type="button" x-show="searchUnit.length > 0" @@click="searchUnit = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto max-h-[70vh]">
                     <table class="w-full text-left">
                         <thead class="bg-surface border-b border-outline-variant sticky top-0">
@@ -158,19 +189,20 @@
                         </thead>
                         <tbody class="divide-y divide-outline-variant">
                             @forelse ($units as $unit)
-                                <tr class="hover:bg-surface-container/50">
+                                <tr class="hover:bg-surface-container/50 transition-colors"
+                                    x-show="!searchUnit || '{{ strtolower($unit->nama_unit . ' ' . $unit->kode_unit . ' ' . $unit->nomor_rak) }}'.includes(searchUnit.toLowerCase())">
                                     <td class="py-3 px-4 font-medium text-on-surface">{{ $unit->kode_unit }}</td>
-                                    <td class="py-3 px-4 text-on-surface">{{ $unit->nama_unit }}</td>
+                                    <td class="py-3 px-4 text-on-surface font-medium">{{ $unit->nama_unit }}</td>
                                     <td class="py-3 px-4 text-on-surface-variant">{{ $unit->arsips_count }} arsip</td>
-                                    <td class="py-3 px-4 text-right space-x-1">
-                                        <a href="{{ route('pengaturan', ['tab' => 'unit', 'edit_unit' => $unit->id]) }}" class="inline-flex p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-fixed/30 rounded" title="Edit">
-                                            <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
-                                        </a>
-                                        <form action="{{ route('unit.destroy', $unit) }}" method="POST" class="inline" onsubmit="return confirm('Hapus unit {{ $unit->kode_unit }}?')">
+                                    <td class="py-3 px-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-1.5">
+                                        <button type="button" @@click="activeUnit = { id: {{ $unit->id }}, nama_unit: {{ json_encode($unit->nama_unit) }}, kode_unit: {{ json_encode($unit->kode_unit) }} }; editUnitModal = true" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm" title="Edit">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">edit</span> Edit
+                                        </button>
+                                        <form action="{{ route('unit.destroy', $unit) }}" method="POST" class="inline" data-confirm="Hapus unit {{ $unit->kode_unit }}?">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/50 rounded" title="Hapus">
-                                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
                                             </button>
                                         </form>
                                     </td>
@@ -180,6 +212,31 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {{-- MODAL EDIT UNIT --}}
+            <div x-show="editUnitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4" x-cloak>
+                <div class="bg-surface rounded-xl border border-outline-variant shadow-lg max-w-md w-full p-stack-lg" @@click.outside="editUnitModal = false">
+                    <h3 class="font-display-md text-title-md mb-4 text-on-surface">Edit Unit / UPT</h3>
+                    <form x-bind:action="'{{ url('pengaturan/unit') }}/' + (activeUnit ? activeUnit.id : '')" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="mb-4">
+                            <label class="block text-label-md font-bold mb-1">Nama Unit <span class="text-error">*</span></label>
+                            <input type="text" name="nama_unit" x-bind:value="activeUnit ? activeUnit.nama_unit : ''" required
+                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-label-md font-bold mb-1">Kode Unit <span class="text-error">*</span></label>
+                            <input type="text" name="kode_unit" x-bind:value="activeUnit ? activeUnit.kode_unit : ''" required
+                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @@click="editUnitModal = false" class="px-4 py-2 border rounded text-on-surface-variant">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-on-primary rounded font-bold">Update</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -223,7 +280,7 @@
                     </div>
                 </dl>
                 <p class="mt-stack-md text-label-md text-on-surface-variant">
-                    Login multi-user belum diaktifkan (sesuai scope: 1 admin internal). Fitur auth dapat ditambahkan saat revisi berikutnya.
+                    Sistem login admin internal sudah aktif.
                 </p>
             </div>
         </div>

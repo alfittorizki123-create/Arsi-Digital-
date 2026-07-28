@@ -8,32 +8,22 @@
             <h2 class="font-display-md text-display-md text-on-surface">Beranda</h2>
             <p class="text-body-md text-on-surface-variant mt-1">Ringkasan arsip digital pajak daerah Bapenda Provinsi Riau.</p>
         </div>
-        <div class="flex items-center gap-stack-sm">
-            <a href="{{ route('arsips.import') }}" class="flex items-center gap-2 px-4 py-2 rounded border border-primary-container text-primary-container font-label-md text-label-md hover:bg-primary-container/10 transition-colors bg-surface-container-lowest">
-                <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
-                Import Excel
-            </a>
-            <a href="{{ route('arsips.create') }}" class="flex items-center gap-2 px-4 py-2 rounded bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary-container/90 transition-colors shadow-sm">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-                Tambah Arsip
-            </a>
-        </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-stack-md mb-stack-lg">
+    <div class="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-5 gap-stack-md mb-stack-lg">
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Row Arsip</p>
+                <p class="text-label-md text-on-surface-variant">Total Arsip</p>
                 <span class="material-symbols-outlined text-primary">inventory_2</span>
             </div>
             <p class="text-display-md text-on-surface mt-2">{{ number_format($stats['total_arsip']) }}</p>
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Berkas (Σ jumlah)</p>
-                <span class="material-symbols-outlined text-primary">layers</span>
+                <p class="text-label-md text-on-surface-variant">Arsip Aktif</p>
+                <span class="material-symbols-outlined text-green-500">check_circle</span>
             </div>
-            <p class="text-display-md text-primary mt-2">{{ number_format($stats['total_berkas']) }}</p>
+            <p class="text-display-md text-green-600 mt-2">{{ number_format($stats['arsip_aktif']) }}</p>
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
@@ -44,7 +34,14 @@
         </div>
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Unit/UPT/UP</p>
+                <p class="text-label-md text-on-surface-variant">Total Berkas</p>
+                <span class="material-symbols-outlined text-primary">layers</span>
+            </div>
+            <p class="text-display-md text-primary mt-2">{{ number_format($stats['total_berkas']) }}</p>
+        </div>
+        <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
+            <div class="flex items-center justify-between">
+                <p class="text-label-md text-on-surface-variant">Total Unit</p>
                 <span class="material-symbols-outlined text-primary">apartment</span>
             </div>
             <p class="text-display-md text-on-surface mt-2">{{ number_format($stats['total_unit']) }}</p>
@@ -54,7 +51,7 @@
     <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
         <div class="flex items-center justify-between px-stack-md py-stack-md border-b border-outline-variant">
             <h3 class="text-headline-sm font-bold text-on-surface">Arsip Terbaru</h3>
-            <a href="{{ route('arsips.index') }}" class="text-primary text-label-md hover:underline">Lihat semua</a>
+            <a href="{{ route('arsips.pilih_unit') }}" class="text-primary text-label-md hover:underline">Lihat arsip per unit</a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">

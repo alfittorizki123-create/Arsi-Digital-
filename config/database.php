@@ -77,6 +77,7 @@ return [
             'search_path' => 'public',
             'sslmode' => 'prefer',
         ],
+        
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
