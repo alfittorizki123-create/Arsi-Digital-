@@ -16,14 +16,18 @@ class LaporanController extends Controller
     {
         $filters = $request->only(['jenis_pajak_id', 'unit_id', 'status', 'kurun_waktu', 'bulan', 'tipe_arsip', 'kondisi', 'klasifikasi_keamanan']);
 
-        $query = Arsip::with(['jenisPajak', 'unit'])->latest();
+        $query = Arsip::with(['jenisPajaks', 'unit'])->latest();
         $this->applyFilters($query, $filters);
         $arsips = $query->paginate(20)->withQueryString();
 
         $rekapUnit = DB::table('arsips')
             ->join('units', 'arsips.unit_id', '=', 'units.id')
             ->select('units.id', 'units.nama_unit', 'units.kode_unit', DB::raw('count(arsips.id) as total'), DB::raw('coalesce(sum(arsips.jumlah),0) as total_berkas'))
-            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->where('arsips.jenis_pajak_id', $v))
+            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->whereExists(function ($sq) use ($v) {
+                $sq->select(DB::raw(1))->from('arsip_jenis_pajak')
+                   ->whereColumn('arsip_jenis_pajak.arsip_id', 'arsips.id')
+                   ->where('arsip_jenis_pajak.jenis_pajak_id', $v);
+            }))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('arsips.status', $v))
             ->when($filters['kurun_waktu'] ?? null, fn ($q, $v) => $q->where('arsips.kurun_waktu', $v))
             ->when($filters['bulan'] ?? null, fn ($q, $v) => $q->where('arsips.bulan', $v))
@@ -38,7 +42,11 @@ class LaporanController extends Controller
 
         $rekapTahun = DB::table('arsips')
             ->select('kurun_waktu', DB::raw('count(id) as total'), DB::raw('coalesce(sum(jumlah),0) as total_berkas'))
-            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->where('jenis_pajak_id', $v))
+            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->whereExists(function ($sq) use ($v) {
+                $sq->select(DB::raw(1))->from('arsip_jenis_pajak')
+                   ->whereColumn('arsip_jenis_pajak.arsip_id', 'arsips.id')
+                   ->where('arsip_jenis_pajak.jenis_pajak_id', $v);
+            }))
             ->when($filters['unit_id'] ?? null, fn ($q, $v) => $q->where('unit_id', $v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($filters['tipe_arsip'] ?? null, fn ($q, $v) => $q->where('tipe_arsip', $v))
@@ -52,7 +60,11 @@ class LaporanController extends Controller
 
         $rekapTipe = DB::table('arsips')
             ->select('tipe_arsip', DB::raw('count(id) as total'), DB::raw('coalesce(sum(jumlah),0) as total_berkas'))
-            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->where('jenis_pajak_id', $v))
+            ->when($filters['jenis_pajak_id'] ?? null, fn ($q, $v) => $q->whereExists(function ($sq) use ($v) {
+                $sq->select(DB::raw(1))->from('arsip_jenis_pajak')
+                   ->whereColumn('arsip_jenis_pajak.arsip_id', 'arsips.id')
+                   ->where('arsip_jenis_pajak.jenis_pajak_id', $v);
+            }))
             ->when($filters['unit_id'] ?? null, fn ($q, $v) => $q->where('unit_id', $v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($filters['kurun_waktu'] ?? null, fn ($q, $v) => $q->where('kurun_waktu', $v))
@@ -164,7 +176,7 @@ class LaporanController extends Controller
 
     private function applyFilters($query, array $filters): void
     {
-        if (! empty($filters['jenis_pajak_id'])) $query->where('jenis_pajak_id', $filters['jenis_pajak_id']);
+        if (! empty($filters['jenis_pajak_id'])) $query->whereHas('jenisPajaks', fn ($q) => $q->where('jenis_pajaks.id', $filters['jenis_pajak_id']));
         if (! empty($filters['unit_id'])) $query->where('unit_id', $filters['unit_id']);
         if (! empty($filters['status'])) $query->where('status', $filters['status']);
         if (! empty($filters['kurun_waktu'])) $query->where('kurun_waktu', $filters['kurun_waktu']);

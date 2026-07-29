@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>@yield('title', 'Bapenda Riau') - Arsip Digital</title>
     @if (file_exists(public_path('build/manifest.json')))
         @php
@@ -63,8 +64,6 @@
                     ['route' => 'arsips.pilih_unit', 'icon' => 'inventory_2', 'label' => 'Daftar Arsip', 'match' => ['arsips.pilih_unit', 'arsips.index', 'arsips.create', 'arsips.edit', 'arsips.show']],
                     ['route' => 'peminjaman.index', 'icon' => 'book', 'label' => 'Peminjaman', 'match' => ['peminjaman*']],
                     ['route' => 'raks.index', 'icon' => 'shelves', 'label' => 'Kelola Rak', 'match' => ['raks*']],
-                    ['route' => 'laporan', 'icon' => 'analytics', 'label' => 'Laporan', 'match' => ['laporan*']],
-                    ['route' => 'pengaturan', 'icon' => 'settings', 'label' => 'Pengaturan', 'match' => ['pengaturan*']],
                 ];
             @endphp
             @foreach ($navItems as $item)
@@ -72,23 +71,53 @@
                     $isActive = request()->routeIs($item['match']);
                 @endphp
                 <a href="{{ route($item['route']) }}"
-                   class="flex items-center gap-stack-md px-3 py-stack-md transition-all whitespace-nowrap @if($isActive) bg-primary-container/20 dark:bg-primary/20 border-l-4 border-on-primary text-on-primary font-bold opacity-90 @else text-on-primary/70 dark:text-on-primary-container/70 hover:bg-primary-container/10 dark:hover:bg-primary/10 @endif"
+                   class="relative flex items-center gap-stack-md px-3 py-stack-md transition-all duration-200 whitespace-nowrap overflow-hidden group
+                   @if($isActive)
+                       bg-gradient-to-r from-primary-container/30 to-transparent border-l-4 border-on-primary text-on-primary font-bold
+                   @else
+                       text-on-primary/70 dark:text-on-primary-container/70 hover:bg-primary-container/10 dark:hover:bg-primary/10 hover:translate-x-0.5 hover:text-on-primary/90
+                   @endif"
                    :title="!sidebarOpen ? '{{ $item['label'] }}' : ''">
-                    <span class="material-symbols-outlined shrink-0" @if($isActive) style="font-variation-settings: 'FILL' 1;" @endif>{{ $item['icon'] }}</span>
-                    <span x-show="sidebarOpen">{{ $item['label'] }}</span>
+                    <span class="material-symbols-outlined shrink-0 transition-transform duration-200 group-hover:scale-110" @if($isActive) style="font-variation-settings: 'FILL' 1;" @endif>{{ $item['icon'] }}</span>
+                    <span x-show="sidebarOpen" class="transition-opacity duration-200">{{ $item['label'] }}</span>
+                </a>
+            @endforeach
+
+            {{-- Grup Pengaturan --}}
+            <div x-show="sidebarOpen" class="mx-3 mt-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-on-primary/40 select-none">Lainnya</div>
+            @php
+                $settingItems = [
+                    ['route' => 'laporan', 'icon' => 'analytics', 'label' => 'Laporan', 'match' => ['laporan*']],
+                    ['route' => 'pengaturan', 'icon' => 'settings', 'label' => 'Pengaturan', 'match' => ['pengaturan*']],
+                ];
+            @endphp
+            @foreach ($settingItems as $item)
+                @php
+                    $isActive = request()->routeIs($item['match']);
+                @endphp
+                <a href="{{ route($item['route']) }}"
+                   class="relative flex items-center gap-stack-md px-3 py-stack-md transition-all duration-200 whitespace-nowrap overflow-hidden group
+                   @if($isActive)
+                       bg-gradient-to-r from-primary-container/30 to-transparent border-l-4 border-on-primary text-on-primary font-bold
+                   @else
+                       text-on-primary/70 dark:text-on-primary-container/70 hover:bg-primary-container/10 dark:hover:bg-primary/10 hover:translate-x-0.5 hover:text-on-primary/90
+                   @endif"
+                   :title="!sidebarOpen ? '{{ $item['label'] }}' : ''">
+                    <span class="material-symbols-outlined shrink-0 transition-transform duration-200 group-hover:scale-110" @if($isActive) style="font-variation-settings: 'FILL' 1;" @endif>{{ $item['icon'] }}</span>
+                    <span x-show="sidebarOpen" class="transition-opacity duration-200">{{ $item['label'] }}</span>
                 </a>
             @endforeach
         </div>
 
         {{-- Footer --}}
-        <div class="mt-auto">
-            <form method="POST" action="{{ route('logout') }}">
+        <div class="mt-auto pt-3 border-t border-on-primary/20 mx-2">
+            <form method="POST" action="{{ route('logout') }}" data-confirm="Yakin ingin keluar?">
                 @csrf
                 <button type="submit"
-                        class="w-full flex items-center gap-stack-md px-3 py-stack-md text-on-primary/70 dark:text-on-primary-container/70 hover:bg-primary-container/10 dark:hover:bg-primary/10 transition-colors text-left whitespace-nowrap"
+                        class="w-full flex items-center gap-stack-md px-3 py-stack-md text-red-300 hover:text-white hover:bg-red-500/20 transition-all duration-200 text-left whitespace-nowrap group"
                         :title="!sidebarOpen ? 'Keluar' : ''">
-                    <span class="material-symbols-outlined shrink-0">logout</span>
-                    <span x-show="sidebarOpen">Keluar</span>
+                    <span class="material-symbols-outlined shrink-0 transition-transform duration-200 group-hover:scale-110">logout</span>
+                    <span x-show="sidebarOpen" class="font-bold tracking-wide">Keluar</span>
                 </button>
             </form>
         </div>

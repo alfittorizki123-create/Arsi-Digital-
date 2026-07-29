@@ -9,7 +9,6 @@ class Peminjaman extends Model
     protected $table = 'peminjamen';
 
     protected $fillable = [
-        'arsip_id',
         'nama_peminjam',
         'instansi',
         'telp',
@@ -27,9 +26,9 @@ class Peminjaman extends Model
         'tanggal_dikembalikan' => 'date',
     ];
 
-    public function arsip()
+    public function arsips()
     {
-        return $this->belongsTo(Arsip::class, 'arsip_id');
+        return $this->belongsToMany(Arsip::class, 'peminjaman_arsip', 'peminjaman_id', 'arsip_id')->withTimestamps();
     }
 
     public function getStatusBadgeAttribute(): string

@@ -17,7 +17,7 @@ class DashboardController extends Controller
             'total_unit' => Unit::count(),
         ];
 
-        $arsipTerbaru = Arsip::with(['jenisPajak', 'unit'])
+        $arsipTerbaru = Arsip::with(['unit'])
             ->latest()
             ->take(5)
             ->get();

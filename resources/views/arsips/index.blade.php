@@ -310,19 +310,13 @@
                                                 <p class="line-clamp-2" title="{{ $arsip->uraian_informasi_arsip }}">
                                                     {{ $arsip->uraian_informasi_arsip ?? '-' }}
                                                 </p>
-                                                @if ($arsip->jenisPajaks->count() > 0)
+                                                @if ($arsip->jenisPajaks->isNotEmpty())
                                                     <div class="flex items-center gap-1 flex-wrap mt-1">
                                                         @foreach ($arsip->jenisPajaks as $jpItem)
                                                             <span class="px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed text-[10px] font-bold" title="{{ $jpItem->nama_jenis_pajak }}">
                                                                 {{ $jpItem->kode }}
                                                             </span>
                                                         @endforeach
-                                                    </div>
-                                                @elseif ($arsip->jenisPajak)
-                                                    <div class="flex items-center gap-1 flex-wrap mt-1">
-                                                        <span class="px-2 py-0.5 rounded bg-primary-fixed/40 text-on-primary-fixed text-[10px] font-bold" title="{{ $arsip->jenisPajak->nama_jenis_pajak }}">
-                                                            {{ $arsip->jenisPajak->kode }}
-                                                        </span>
                                                     </div>
                                                 @endif
                                             </td>
@@ -443,28 +437,70 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label for="files_modal" class="block text-label-md font-label-md text-on-surface-variant mb-1">
-                                File Excel <span class="text-error">*</span> <span class="text-xs font-semibold text-primary">(Bisa pilih banyak file Excel!)</span>
+                            <label class="block text-label-md font-label-md text-on-surface-variant mb-1">
+                                File Excel <span class="text-error">*</span>
                             </label>
-                            <input type="file" name="files[]" id="files_modal" accept=".xlsx,.xls,.csv" multiple
-                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary text-body-md file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed file:text-label-md file:font-semibold @error('files') border-error @else border-outline-variant @enderror"
-                                   required>
-                            <p class="mt-2 text-label-md text-on-surface-variant">Format: .xlsx, .xls, .csv · Maksimal 20 MB · Anda bisa memilih beberapa file Excel sekaligus.</p>
-                            @error('file') <p class="mt-1 text-sm text-error">{{ $message }}</p> @enderror
+                            <input type="file" name="file" id="files_modal" accept=".xlsx,.xls,.csv" required
+                                   class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary text-body-md file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed file:text-label-md file:font-semibold cursor-pointer"
+                                   onchange="uploadExcelModal(this)">
+                            <p class="mt-2 text-label-md text-on-surface-variant">Format: .xlsx, .xls, .csv · Maksimal 20 MB</p>
+                            <div id="import_modal_loading" class="mt-3 hidden">
+                                <div class="flex items-center gap-2 p-3 rounded-lg bg-primary-fixed/20 border border-primary/30">
+                                    <span class="material-symbols-outlined text-primary animate-spin text-sm">progress_activity</span>
+                                    <span class="text-xs font-bold text-primary">Memproses file...</span>
+                                </div>
+                            </div>
+                            <div id="import_modal_error" class="mt-3 hidden">
+                                <p id="import_modal_error_text" class="text-sm text-error font-bold"></p>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-3">
                         <button type="button" @@click="importModalOpen = false" class="px-4 py-2 text-label-md font-label-md text-on-surface hover:bg-surface-container rounded transition-colors">Batal</button>
-                        <button type="submit" class="flex items-center gap-2 px-4 py-2 text-label-md font-label-md bg-primary text-on-primary hover:bg-primary/90 rounded transition-colors">
-                            <span class="material-symbols-outlined" style="font-size: 18px;">preview</span>
-                            Pratinjau
-                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     @endif
+
+    <script>
+    async function uploadExcelModal(input) {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        document.getElementById('import_modal_loading').classList.remove('hidden');
+        document.getElementById('import_modal_error').classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+
+        try {
+            const res = await fetch('{{ route('arsips.import.preview_ajax') }}', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                document.getElementById('import_modal_loading').classList.add('hidden');
+                document.getElementById('import_modal_error_text').innerText = data.error || 'Gagal memproses file.';
+                document.getElementById('import_modal_error').classList.remove('hidden');
+                showToast('error', data.error || 'Gagal memproses file.');
+            }
+        } catch (err) {
+            document.getElementById('import_modal_loading').classList.add('hidden');
+            document.getElementById('import_modal_error_text').innerText = 'Koneksi gagal.';
+            document.getElementById('import_modal_error').classList.remove('hidden');
+            showToast('error', 'Koneksi gagal.');
+        }
+    }
+    </script>
 
     {{-- Modal Preview & Mass Upload Lampiran Files --}}
     <div id="filesModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="files-modal-title" role="dialog" aria-modal="true">
@@ -681,6 +717,8 @@
         } catch (err) {
             console.error('Error delete file:', err);
         }
+    }
+
     function closeFilesModal() {
         document.getElementById('filesModal').classList.add('hidden');
     }

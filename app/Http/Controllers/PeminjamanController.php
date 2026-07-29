@@ -4,18 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Arsip;
 use App\Models\Peminjaman;
+use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PeminjamanController extends Controller
 {
     public function json(Peminjaman $peminjaman)
     {
-        $a = $peminjaman->arsip;
-        $arsipLabel = ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian') . ' [' . ($a->unit?->nama_unit ?? '-') . ']';
+        $peminjaman->load('arsips.unit');
+        $arsipsData = $peminjaman->arsips->map(fn($a) => [
+            'id' => $a->id,
+            'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian') . ' [' . ($a->unit?->nama_unit ?? '-') . ']',
+        ]);
 
         return response()->json([
-            'arsip_id' => $peminjaman->arsip_id,
-            'arsip_label' => $arsipLabel,
+            'arsip_ids' => $arsipsData->pluck('id'),
+            'arsips' => $arsipsData,
             'nama_peminjam' => $peminjaman->nama_peminjam,
             'instansi' => $peminjaman->instansi,
             'telp' => $peminjaman->telp,
@@ -53,9 +58,41 @@ class PeminjamanController extends Controller
         return response()->json($results);
     }
 
+    public function arsipsByUnit(Request $request)
+    {
+        $unitId = $request->get('unit_id');
+        if (!$unitId) {
+            return response()->json([]);
+        }
+
+        $arsips = Arsip::with(['unit', 'boks'])
+            ->where('unit_id', $unitId)
+            ->orderBy('nomor_boks')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn($a) => $a->boks_id ? "boks_{$a->boks_id}" : 'tanpa_boks');
+
+        $result = [];
+        foreach ($arsips as $groupKey => $items) {
+            $boks = $items->first()->boks;
+            $groupLabel = $boks ? "Boks {$boks->nomor_boks}" : 'Tanpa Boks';
+            $result[] = [
+                'group' => $groupLabel,
+                'items' => $items->map(fn($a) => [
+                    'id' => $a->id,
+                    'kode' => $a->kode_klasifikasi ?? '-',
+                    'uraian' => $a->uraian_informasi_arsip ?? '-',
+                    'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian'),
+                ]),
+            ];
+        }
+
+        return response()->json($result);
+    }
+
     public function index(Request $request)
     {
-        $query = Peminjaman::with(['arsip.unit'])->latest('tanggal_pinjam');
+        $query = Peminjaman::with(['arsips.unit'])->latest('tanggal_pinjam');
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -63,7 +100,7 @@ class PeminjamanController extends Controller
                 $q->where('nama_peminjam', 'like', "%{$s}%")
                   ->orWhere('instansi', 'like', "%{$s}%")
                   ->orWhere('keperluan', 'like', "%{$s}%")
-                  ->orWhereHas('arsip', function ($q2) use ($s) {
+                  ->orWhereHas('arsips', function ($q2) use ($s) {
                       $q2->where('kode_klasifikasi', 'like', "%{$s}%")
                          ->orWhere('uraian_informasi_arsip', 'like', "%{$s}%");
                   });
@@ -75,14 +112,16 @@ class PeminjamanController extends Controller
         }
 
         $peminjamen = $query->paginate(20)->withQueryString();
+        $units = Unit::orderBy('nama_unit')->get();
 
-        return view('peminjaman.index', compact('peminjamen'));
+        return view('peminjaman.index', compact('peminjamen', 'units'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'arsip_id' => ['required', 'exists:arsips,id'],
+            'arsip_ids' => ['required', 'array', 'min:1'],
+            'arsip_ids.*' => ['required', 'exists:arsips,id'],
             'nama_peminjam' => ['required', 'string', 'max:255'],
             'instansi' => ['nullable', 'string', 'max:255'],
             'telp' => ['nullable', 'string', 'max:50'],
@@ -91,23 +130,32 @@ class PeminjamanController extends Controller
             'tanggal_kembali_rencana' => ['nullable', 'date', 'after_or_equal:tanggal_pinjam'],
             'keterangan' => ['nullable', 'string'],
         ], [], [
-            'arsip_id' => 'arsip',
+            'arsip_ids' => 'arsip',
             'nama_peminjam' => 'nama peminjam',
             'instansi' => 'instansi',
             'tanggal_pinjam' => 'tanggal pinjam',
             'tanggal_kembali_rencana' => 'tanggal kembali rencana',
         ]);
 
-        $existingPinjam = Peminjaman::where('arsip_id', $data['arsip_id'])
-            ->where('status', 'dipinjam')
-            ->exists();
-        if ($existingPinjam) {
-            return back()->withInput()->with('error', 'Arsip ini sedang dipinjam dan belum dikembalikan.');
+        $existingIds = DB::table('peminjaman_arsip')
+            ->join('peminjamen', 'peminjaman_arsip.peminjaman_id', '=', 'peminjamen.id')
+            ->whereIn('peminjaman_arsip.arsip_id', $data['arsip_ids'])
+            ->where('peminjamen.status', 'dipinjam')
+            ->pluck('peminjaman_arsip.arsip_id')
+            ->unique()
+            ->toArray();
+
+        $conflictIds = array_intersect($data['arsip_ids'], $existingIds);
+        if (!empty($conflictIds)) {
+            return back()->withInput()->with('error', 'Beberapa arsip sedang dipinjam dan belum dikembalikan.');
         }
 
         $data['status'] = 'dipinjam';
+        $arsipIds = $data['arsip_ids'];
+        unset($data['arsip_ids']);
 
-        Peminjaman::create($data);
+        $peminjaman = Peminjaman::create($data);
+        $peminjaman->arsips()->sync($arsipIds);
 
         return redirect()->route('peminjaman.index')->with('success', 'Data peminjaman berhasil dicatat.');
     }
@@ -115,7 +163,8 @@ class PeminjamanController extends Controller
     public function update(Request $request, Peminjaman $peminjaman)
     {
         $data = $request->validate([
-            'arsip_id' => ['required', 'exists:arsips,id'],
+            'arsip_ids' => ['required', 'array', 'min:1'],
+            'arsip_ids.*' => ['required', 'exists:arsips,id'],
             'nama_peminjam' => ['required', 'string', 'max:255'],
             'instansi' => ['nullable', 'string', 'max:255'],
             'telp' => ['nullable', 'string', 'max:50'],
@@ -124,22 +173,32 @@ class PeminjamanController extends Controller
             'tanggal_kembali_rencana' => ['nullable', 'date', 'after_or_equal:tanggal_pinjam'],
             'keterangan' => ['nullable', 'string'],
         ], [], [
-            'arsip_id' => 'arsip',
+            'arsip_ids' => 'arsip',
             'nama_peminjam' => 'nama peminjam',
             'instansi' => 'instansi',
             'tanggal_pinjam' => 'tanggal pinjam',
             'tanggal_kembali_rencana' => 'tanggal kembali rencana',
         ]);
 
-        $existingPinjam = Peminjaman::where('arsip_id', $data['arsip_id'])
-            ->where('id', '!=', $peminjaman->id)
-            ->where('status', 'dipinjam')
-            ->exists();
-        if ($existingPinjam) {
-            return back()->withInput()->with('error', 'Arsip ini sedang dipinjam orang lain dan belum dikembalikan.');
+        $existingIds = DB::table('peminjaman_arsip')
+            ->join('peminjamen', 'peminjaman_arsip.peminjaman_id', '=', 'peminjamen.id')
+            ->whereIn('peminjaman_arsip.arsip_id', $data['arsip_ids'])
+            ->where('peminjamen.id', '!=', $peminjaman->id)
+            ->where('peminjamen.status', 'dipinjam')
+            ->pluck('peminjaman_arsip.arsip_id')
+            ->unique()
+            ->toArray();
+
+        $conflictIds = array_intersect($data['arsip_ids'], $existingIds);
+        if (!empty($conflictIds)) {
+            return back()->withInput()->with('error', 'Beberapa arsip sedang dipinjam orang lain dan belum dikembalikan.');
         }
 
+        $arsipIds = $data['arsip_ids'];
+        unset($data['arsip_ids']);
+
         $peminjaman->update($data);
+        $peminjaman->arsips()->sync($arsipIds);
 
         return redirect()->route('peminjaman.index')->with('success', 'Data peminjaman berhasil diperbarui.');
     }

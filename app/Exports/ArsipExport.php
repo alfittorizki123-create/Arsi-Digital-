@@ -75,7 +75,7 @@ class ArsipExport implements WithMultipleSheets
             $query->where('klasifikasi_keamanan', $this->filters['klasifikasi_keamanan']);
         }
         if (! empty($this->filters['jenis_pajak_id'])) {
-            $query->where('jenis_pajak_id', $this->filters['jenis_pajak_id']);
+            $query->whereHas('jenisPajaks', fn ($q) => $q->where('jenis_pajaks.id', $this->filters['jenis_pajak_id']));
         }
         if (! empty($this->filters['selected_ids'])) {
             $ids = is_array($this->filters['selected_ids']) ? $this->filters['selected_ids'] : explode(',', $this->filters['selected_ids']);

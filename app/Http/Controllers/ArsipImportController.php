@@ -15,11 +15,7 @@ class ArsipImportController extends Controller
 {
     public function create()
     {
-        $units = Unit::orderBy('nama_unit')->get();
-        $jenisPajaks = JenisPajak::orderBy('nama_jenis_pajak')->get();
-        $tahuns = Arsip::select('kurun_waktu')->distinct()->orderByDesc('kurun_waktu')->pluck('kurun_waktu');
-
-        return view('arsips.import', compact('units', 'jenisPajaks', 'tahuns'));
+        return view('arsips.import');
     }
 
     public function preview(Request $request)
@@ -383,21 +379,25 @@ class ArsipImportController extends Controller
                 ->with('error', 'File Excel kosong atau format kolom tidak dikenali.');
         }
 
+        $token = Str::random(40);
+
         session([
-            'arsip_import_preview' => $preview,
-            'arsip_import_unit_id' => $unitId,
+            "arsip_import_preview.{$token}" => $preview,
+            "arsip_import_unit_id.{$token}" => $unitId,
         ]);
 
         $validCount = collect($preview)->where('valid', true)->count();
         $errorCount = count($preview) - $validCount;
         $units = Unit::orderBy('nama_unit')->get();
 
-        return view('arsips.import-preview', compact('preview', 'validCount', 'errorCount', 'sheetSummary', 'units'));
+        return view('arsips.import-preview', compact('preview', 'validCount', 'errorCount', 'sheetSummary', 'units', 'token'));
     }
 
     public function confirm(Request $request)
     {
-        $preview = session('arsip_import_preview');
+        $token = $request->input('import_token');
+        $preview = session("arsip_import_preview.{$token}");
+        $unitId = session("arsip_import_unit_id.{$token}");
 
         if (! is_array($preview) || count($preview) === 0) {
             return redirect()
@@ -485,12 +485,186 @@ class ArsipImportController extends Controller
             $imported++;
         }
 
-        $unitId = session('arsip_import_unit_id');
-        session()->forget(['arsip_import_preview', 'arsip_import_unit_id']);
+        $unitId = session("arsip_import_unit_id.{$token}");
+        session()->forget(["arsip_import_preview.{$token}", "arsip_import_unit_id.{$token}"]);
 
         $route = $unitId ? route('arsips.index', ['unit_id' => $unitId]) : route('arsips.index');
 
         return redirect($route)->with('success', "Import selesai. Berhasil: {$imported}, dilewati: {$skipped}.");
+    }
+
+    public function previewAjax(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+        ], [], ['file' => 'file excel']);
+
+        $uploaded = $request->file('file');
+        if (!$uploaded || !$uploaded->isValid()) {
+            return response()->json(['success' => false, 'error' => 'File tidak valid.'], 422);
+        }
+
+        $import = new \App\Imports\ArsipPreviewImport;
+        \Maatwebsite\Excel\Facades\Excel::import($import, $uploaded);
+        $sheets = $import->sheets ?? [];
+
+        if (empty($sheets)) {
+            return response()->json(['success' => false, 'error' => 'File Excel kosong atau format tidak didukung.'], 422);
+        }
+
+        // Proses file yang sama seperti preview()
+        $token = Str::random(40);
+        $allUploadedSheets = [];
+        foreach (new \Illuminate\Support\Collection([$uploaded]) as $uploadedExcel) {
+            $import2 = new \App\Imports\ArsipPreviewImport;
+            \Maatwebsite\Excel\Facades\Excel::import($import2, $uploadedExcel);
+            foreach ($import2->sheets ?? [] as $sName => $rows) {
+                $allUploadedSheets[$sName] = $rows;
+            }
+        }
+        $sheets = $allUploadedSheets;
+
+        $preview = [];
+        $sheetSummary = [];
+        $matchedUnitId = null;
+        $detectedUnitName = '-';
+
+        foreach ($sheets as $sheetName => $rows) {
+            $upperSheetName = strtoupper(trim($sheetName));
+            if (str_contains($upperSheetName, 'REKAP') || preg_match('/(JANUARI|FEBRUARI|MARET|APRIL|MEI|JUNI|JULI|AGUS|SEPT|OKT|NOV|DES)\s*\d{4}/i', $sheetName)) continue;
+            if (str_contains($upperSheetName, 'DATAR AUDIT')) continue;
+
+            $foundUnit = null;
+            $detectedUnitName = '-';
+            $matchedUnitId = null;
+
+            // Exact map
+            $exactMap = ['UP TAPUNG HILIR' => 'UP Tapung Hilir', 'UPT TAPUNG' => 'UP Tapung', 'UP TAPUNG' => 'UP Tapung', 'E-SAMSAT' => 'E-Samsat', 'E SAMSAT' => 'E-Samsat', 'UP BANDAR SEKIJANG' => 'UP Sekijang', 'UP KEPENUHAN' => 'UP Kepenuhan', 'UP SAMKEL 1' => 'UP Samsat Keliling 1', 'UP SAMKEL 2' => 'UP Samsat Keliling 2', 'SAMKEL INHU' => 'UP Samsat Keliling Inhu', 'UP. KEMPAS' => 'UP Kempas Inhil', 'UP. BELILAS' => 'UP Belilas', 'UP.PINGGIR' => 'UP Pinggir', 'UJUNG TANJUNG' => 'UP Ujung Tanjung', 'UP AIR MOLEK' => 'UPT Air Molek', 'UP. RUPAT' => 'UP Rupat', 'KUBANG' => 'UPT Kubang', 'SIAK' => 'UPT Siak', 'BENGKALIS' => 'UPT Bengkalis', 'TEMBILAHAN' => 'UPT Tembilahan', 'RENGAT' => 'UPT Rengat', 'BANGKINANG' => 'UPT Bangkinang', 'UP PANGKALAN KURAS' => 'UP PKL Kuras', 'UP UJUNG BATU' => 'UP Pengelolaan Pendapatan Ujung Batu', 'RUMBAI' => 'UPT Rumbai', 'UP DURI' => 'UP Duri', 'PERAWANG' => 'UPT Perawang', 'SLAT PNJNG' => 'UPT Selat Panjang', 'PKU KOTA' => 'UPT Pekanbaru Kota', 'SAMSAT MPP' => 'Samsat MPP', 'SIMPANG TIGA' => 'UPT Simpang Tiga', 'PANAM' => 'UPT Panam', 'PELALAWAN' => 'UPT Pelalawan', 'P PANGARAIAN' => 'UPT Pasir Pangaraian', 'BAGA SIAPIAPI' => 'UPT Bagan Siapi-Api', 'BAGAN BATU' => 'UPT Bagan Batu', 'KUANTAN SINGINGI' => 'UPT Taluk Kuantan', 'TELUK KUANTAN' => 'UPT Taluk Kuantan'];
+
+            $foundUnit = Unit::where('nama_unit', $exactMap[trim(strtoupper($sheetName))] ?? '')->first();
+            if (!$foundUnit) {
+                $cleanSheetName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($sheetName)));
+                foreach (Unit::all() as $u) {
+                    $cleanDbName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($u->nama_unit)));
+                    if (!empty($cleanSheetName) && strlen($cleanSheetName) >= 3 && (str_contains($cleanDbName, $cleanSheetName) || str_contains($cleanSheetName, $cleanDbName))) { $foundUnit = $u; break; }
+                }
+            }
+
+            if ($foundUnit) { $matchedUnitId = $foundUnit->id; $detectedUnitName = $foundUnit->nama_unit; }
+
+            $sheetSummary[$sheetName] = [
+                'sheet_name' => $sheetName, 'unit_id' => $matchedUnitId, 'unit_name' => $detectedUnitName,
+                'status' => $foundUnit ? 'warning' : 'unmatched', 'total_rows' => 0, 'valid_rows' => 0,
+            ];
+
+            $headerIndex = -1;
+            $numberingRowIndex = -1;
+
+            foreach ($rows as $index => $row) {
+                $rowArray = $row->toArray();
+                $normalizedKeys = array_map(fn($v) => $this->normalizeHeader((string) $v), $rowArray);
+                $numericCount = count(array_filter($rowArray, fn($v) => is_numeric($v) && (int)$v >= 1 && (int)$v <= 11));
+                if ($numericCount >= 5) { $numberingRowIndex = $index; continue; }
+                $matches = 0;
+                if (in_array('kode_klasifikasi', $normalizedKeys) || in_array('kode', $normalizedKeys) || in_array('klasifikasi', $normalizedKeys)) $matches++;
+                if (in_array('uraian_informasi_arsip', $normalizedKeys) || in_array('uraian', $normalizedKeys) || in_array('informasi', $normalizedKeys)) $matches++;
+                if (in_array('kurun_waktu', $normalizedKeys) || in_array('tahun', $normalizedKeys)) $matches++;
+                if ($matches >= 2) $headerIndex = $index;
+            }
+
+            $skipToIndex = max($headerIndex, $numberingRowIndex);
+            if ($skipToIndex === -1) continue;
+
+            foreach ($rows as $index => $row) {
+                if ($index <= $skipToIndex) continue;
+                $line = $index + 1;
+                $r = $row->toArray();
+                $kode = $r[1] ?? null; $uraian = $r[3] ?? null; $kurun = $r[4] ?? 2023;
+                $jumlah = $r[5] ?? 1; $satuan = $r[6] ?? 'Berkas';
+                $tingkat = $r[7] ?? null; $noBoks = $r[8] ?? null; $kondisi = $r[9] ?? null; $keamanan = $r[10] ?? null;
+
+                $assocRow = ['kode_klasifikasi' => $kode, 'nomor_arsip_berkas' => $r[2] ?? null, 'uraian_informasi_arsip' => $uraian, 'kurun_waktu' => $kurun, 'jumlah' => $jumlah, 'satuan' => $satuan, 'tingkat_perkembangan' => $tingkat, 'nomor_boks' => $noBoks, 'kondisi' => $kondisi, 'klasifikasi_keamanan' => $keamanan];
+                if ($this->isSkipRow($assocRow)) continue;
+                $sheetSummary[$sheetName]['total_rows']++;
+
+                $bulanInt = $this->normalizeBulan(null);
+                if (preg_match('/bulan\s+([a-z]+)/i', (string)$uraian, $m)) $bulanInt = $this->normalizeBulan($m[1]);
+
+                $errors = [];
+                $data = [
+                    'kode_klasifikasi' => !empty($kode) ? trim((string)$kode) : '900.1.13.1',
+                    'nomor_arsip_berkas' => !empty($r[2] ?? null) ? trim((string)($r[2])) : null,
+                    'uraian_informasi_arsip' => trim((string)$uraian), 'kurun_waktu' => (int)$kurun,
+                    'bulan' => $bulanInt, 'jumlah' => is_numeric($jumlah) ? (int)$jumlah : 1,
+                    'satuan' => !empty($satuan) ? trim((string)$satuan) : 'Berkas',
+                    'tingkat_perkembangan' => $this->normalizeTingkat($tingkat),
+                    'nomor_boks' => !empty($noBoks) ? trim((string)$noBoks) : null,
+                    'kondisi' => $this->normalizeKondisi($kondisi),
+                    'klasifikasi_keamanan' => $this->normalizeKeamanan($keamanan),
+                    'tipe_arsip' => $this->detectTipe($assocRow), 'status' => 'inaktif', 'unit_id' => $matchedUnitId,
+                ];
+
+                $validator = \Illuminate\Support\Facades\Validator::make($data, [
+                    'kurun_waktu' => ['required', 'integer', 'min:1990', 'max:' . (date('Y') + 1)],
+                    'bulan' => ['nullable', 'integer', 'min:1', 'max:12'],
+                    'jumlah' => ['nullable', 'integer', 'min:0'],
+                    'tipe_arsip' => ['required', 'in:rekap,detail'],
+                    'status' => ['required', 'in:aktif,inaktif'],
+                ]);
+                if ($validator->fails()) $errors = array_merge($errors, $validator->errors()->all());
+                if (empty($data['uraian_informasi_arsip']) && empty($data['kode_klasifikasi'])) $errors[] = 'Uraian atau kode klasifikasi wajib diisi.';
+                if (!$matchedUnitId) $errors[] = 'Unit/UPT belum ditentukan untuk sheet ini.';
+                if (count($errors) === 0) $sheetSummary[$sheetName]['valid_rows']++;
+                $preview[] = ['line' => $line, 'sheet' => $sheetName, 'unit_name' => $detectedUnitName, 'valid' => count($errors) === 0, 'errors' => $errors, 'data' => $data];
+            }
+        }
+
+        $sheetSummary = array_filter($sheetSummary, fn($s) => ($s['total_rows'] ?? 0) > 0);
+
+        if (count($preview) === 0) {
+            return response()->json(['success' => false, 'error' => 'File Excel kosong atau format kolom tidak dikenali.'], 422);
+        }
+
+        session(["arsip_import_preview.{$token}" => $preview, "arsip_import_unit_id.{$token}" => null]);
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'redirect' => route('arsips.import.show_preview', ['token' => $token]),
+        ]);
+    }
+
+    public function showPreview($token)
+    {
+        $preview = session("arsip_import_preview.{$token}");
+
+        if (!is_array($preview) || count($preview) === 0) {
+            return redirect()->route('arsips.import')->with('error', 'Sesi preview tidak ditemukan.');
+        }
+
+        $validCount = collect($preview)->where('valid', true)->count();
+        $errorCount = count($preview) - $validCount;
+        $units = Unit::orderBy('nama_unit')->get();
+
+        $sheetNames = collect($preview)->pluck('sheet')->unique();
+        $sheetSummary = [];
+        foreach ($sheetNames as $sName) {
+            $rows = collect($preview)->where('sheet', $sName);
+            $first = $rows->first();
+            $detectedUnit = $first['unit_name'] ?? '-';
+            $matchedId = null;
+            if ($detectedUnit !== '-') {
+                $unit = Unit::where('nama_unit', $detectedUnit)->first();
+                $matchedId = $unit?->id ?? '+new';
+            }
+            $sheetSummary[$sName] = [
+                'sheet_name' => $sName, 'unit_id' => $matchedId, 'unit_name' => $detectedUnit,
+                'status' => $matchedId ? 'warning' : 'unmatched',
+                'total_rows' => $rows->count(), 'valid_rows' => $rows->where('valid', true)->count(),
+            ];
+        }
+
+        return view('arsips.import-preview', compact('preview', 'validCount', 'errorCount', 'sheetSummary', 'units', 'token'));
     }
 
     public function cancel()

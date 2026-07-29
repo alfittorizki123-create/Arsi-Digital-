@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/arsips/pilih-unit', [ArsipController::class, 'pilihUnitUpload'])->name('arsips.pilih_unit');
     Route::get('/arsips/import', [ArsipImportController::class, 'create'])->name('arsips.import');
     Route::post('/arsips/import/preview', [ArsipImportController::class, 'preview'])->name('arsips.import.preview');
+    Route::post('/arsips/import/preview-ajax', [ArsipImportController::class, 'previewAjax'])->name('arsips.import.preview_ajax');
+    Route::get('/arsips/import/preview/{token}', [ArsipImportController::class, 'showPreview'])->name('arsips.import.show_preview');
     Route::post('/arsips/import/confirm', [ArsipImportController::class, 'confirm'])->name('arsips.import.confirm');
     Route::post('/arsips/import/cancel', [ArsipImportController::class, 'cancel'])->name('arsips.import.cancel');
 
@@ -45,6 +47,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
     Route::get('/peminjaman/arsips/search', [PeminjamanController::class, 'searchArsip'])->name('peminjaman.search_arsip');
+    Route::get('/peminjaman/arsips-by-unit', [PeminjamanController::class, 'arsipsByUnit'])->name('peminjaman.arsips_by_unit');
     Route::get('/peminjaman/{peminjaman}/json', [PeminjamanController::class, 'json'])->name('peminjaman.json');
     Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
     Route::put('/peminjaman/{peminjaman}', [PeminjamanController::class, 'update'])->name('peminjaman.update');

@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Boks;
-use App\Models\Rak;
-use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class BoksController extends Controller

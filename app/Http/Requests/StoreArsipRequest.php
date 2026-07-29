@@ -30,7 +30,6 @@ class StoreArsipRequest extends FormRequest
             'klasifikasi_keamanan' => ['nullable', Rule::in(['Terbuka', 'Terbatas', 'Rahasia'])],
             'status' => ['required', Rule::in(['aktif', 'inaktif'])],
             'unit_id' => ['nullable', 'exists:units,id'],
-            'jenis_pajak_id' => ['nullable', 'exists:jenis_pajaks,id'],
             'jenis_pajak_ids' => ['nullable', 'array'],
             'jenis_pajak_ids.*' => ['nullable', 'exists:jenis_pajaks,id'],
             'file_arsip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx', 'max:102400'],
@@ -62,7 +61,7 @@ class StoreArsipRequest extends FormRequest
             'klasifikasi_keamanan' => 'klasifikasi keamanan',
             'status' => 'status',
             'unit_id' => 'unit/UPT',
-            'jenis_pajak_id' => 'jenis pajak',
+            'jenis_pajak_ids' => 'jenis pajak',
             'file_arsip' => 'file arsip',
         ];
     }

@@ -113,7 +113,7 @@ class ArsipController extends Controller
             return redirect()->route('arsips.pilih_unit');
         }
 
-        $query = Arsip::with(['jenisPajak', 'jenisPajaks', 'unit', 'boks.rak', 'files'])->oldest();
+        $query = Arsip::with(['jenisPajaks', 'unit', 'boks.rak', 'files'])->oldest();
 
         if ($request->filled('search')) {
             $rawSearch = trim($request->search);
@@ -132,25 +132,18 @@ class ArsipController extends Controller
                           $uQuery->where('nama_unit', 'like', "%{$term}%")
                                  ->orWhere('kode_unit', 'like', "%{$term}%");
                       })
-                      ->orWhereHas('jenisPajaks', function ($jpQuery) use ($term) {
-                          $jpQuery->where('nama_jenis_pajak', 'like', "%{$term}%")
-                                 ->orWhere('kode', 'like', "%{$term}%");
-                      })
-                      ->orWhereHas('jenisPajak', function ($jpQuery) use ($term) {
-                          $jpQuery->where('nama_jenis_pajak', 'like', "%{$term}%")
-                                 ->orWhere('kode', 'like', "%{$term}%");
-                      });
+                       ->orWhereHas('jenisPajaks', function ($jpQuery) use ($term) {
+                           $jpQuery->where('nama_jenis_pajak', 'like', "%{$term}%")
+                                  ->orWhere('kode', 'like', "%{$term}%");
+                       });
                 });
             }
         }
 
         if ($request->filled('jenis_pajak_id')) {
             $jpId = $request->jenis_pajak_id;
-            $query->where(function ($q) use ($jpId) {
-                $q->where('jenis_pajak_id', $jpId)
-                  ->orWhereHas('jenisPajaks', function ($pQuery) use ($jpId) {
-                      $pQuery->where('jenis_pajaks.id', $jpId);
-                  });
+            $query->whereHas('jenisPajaks', function ($q) use ($jpId) {
+                $q->where('jenis_pajaks.id', $jpId);
             });
         }
         $currentUnit = null;
@@ -228,7 +221,6 @@ class ArsipController extends Controller
         if ($request->filled('jenis_pajak_ids') && is_array($request->jenis_pajak_ids)) {
             $jpIds = array_filter($request->jenis_pajak_ids);
             $arsip->jenisPajaks()->sync($jpIds);
-            $arsip->update(['jenis_pajak_id' => $jpIds[0] ?? null]);
         }
 
         // Asosiasikan file yang sudah diunggah via AJAX (uploaded_file_ids)
@@ -260,7 +252,7 @@ class ArsipController extends Controller
 
     public function show(Arsip $arsip)
     {
-        $arsip->load(['jenisPajak', 'jenisPajaks', 'unit', 'files']);
+        $arsip->load(['jenisPajaks', 'unit', 'files']);
 
         return view('arsips.show', compact('arsip'));
     }
@@ -276,7 +268,7 @@ class ArsipController extends Controller
 
     public function update(UpdateArsipRequest $request, Arsip $arsip)
     {
-        $data = $request->safe()->except(['file_arsip', 'files', 'hapus_file', 'jenis_pajak_ids']);
+        $data = $request->safe()->except(['file_arsip', 'files', 'jenis_pajak_ids']);
 
         if (!empty($data['nomor_boks']) && !empty($data['kurun_waktu'])) {
             $boks = Boks::findOrCreateFromNomor($data['nomor_boks'], $data['kurun_waktu'], $data['unit_id'] ?? $arsip->unit_id);
@@ -296,7 +288,6 @@ class ArsipController extends Controller
         if ($request->has('jenis_pajak_ids')) {
             $jpIds = is_array($request->jenis_pajak_ids) ? array_filter($request->jenis_pajak_ids) : [];
             $arsip->jenisPajaks()->sync($jpIds);
-            $arsip->update(['jenis_pajak_id' => $jpIds[0] ?? null]);
         }
 
         // Upload new multiple files if provided

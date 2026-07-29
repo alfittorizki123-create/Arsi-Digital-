@@ -5,6 +5,7 @@
 @section('content')
 <form action="{{ route('arsips.import.confirm') }}" method="POST">
     @csrf
+    <input type="hidden" name="import_token" value="{{ $token }}">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-lg">
         <div>

@@ -78,7 +78,7 @@
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
                     <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Jenis Pajak</dt>
-                    <dd class="text-body-md text-on-surface">{{ $arsip->jenisPajak->nama_jenis_pajak ?? '-' }} @if($arsip->jenisPajak)({{ $arsip->jenisPajak->kode }})@endif</dd>
+                    <dd class="text-body-md text-on-surface">{{ $arsip->jenisPajaks->first()?->nama_jenis_pajak ?? '-' }} @if($arsip->jenisPajaks->isNotEmpty())({{ $arsip->jenisPajaks->first()->kode }})@endif</dd>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:gap-4 border-b border-outline-variant pb-3">
                     <dt class="text-label-md text-on-surface-variant w-52 shrink-0">Status</dt>

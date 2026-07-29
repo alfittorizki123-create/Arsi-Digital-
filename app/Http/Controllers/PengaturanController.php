@@ -23,22 +23,10 @@ class PengaturanController extends Controller
             ->orderBy('nama_unit')
             ->get();
 
-        $editJenis = null;
-        if ($request->filled('edit_jenis')) {
-            $editJenis = JenisPajak::find($request->edit_jenis);
-        }
-
-        $editUnit = null;
-        if ($request->filled('edit_unit')) {
-            $editUnit = Unit::find($request->edit_unit);
-        }
-
         return view('pengaturan.index', compact(
             'tab',
             'jenisPajaks',
             'units',
-            'editJenis',
-            'editUnit'
         ));
     }
 }

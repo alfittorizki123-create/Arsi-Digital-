@@ -24,7 +24,6 @@ class Arsip extends Model
         'status',
         'unit_id',
         'boks_id',
-        'jenis_pajak_id',
         'path_file',
         'tipe_file',
     ];
@@ -34,11 +33,6 @@ class Arsip extends Model
         'bulan' => 'integer',
         'jumlah' => 'integer',
     ];
-
-    public function jenisPajak()
-    {
-        return $this->belongsTo(JenisPajak::class, 'jenis_pajak_id');
-    }
 
     public function jenisPajaks()
     {

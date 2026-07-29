@@ -77,7 +77,6 @@ class ArsipRekapSeeder extends Seeder
                 'klasifikasi_keamanan' => 'Terbuka',
                 'status' => 'inaktif',
                 'unit_id' => $unit?->id,
-                'jenis_pajak_id' => null,
             ]);
         }
     }
