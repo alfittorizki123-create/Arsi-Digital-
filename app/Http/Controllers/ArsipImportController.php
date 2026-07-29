@@ -22,8 +22,8 @@ class ArsipImportController extends Controller
     {
         $request->validate([
             'files' => ['nullable', 'array'],
-            'files.*' => ['nullable', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
-            'file' => ['nullable', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+            'files.*' => ['nullable', 'file', 'max:102400'],
+            'file' => ['nullable', 'file', 'max:102400'],
             'unit_id' => ['nullable', 'exists:units,id'],
         ], [], [
             'files' => 'file-file excel',
@@ -120,16 +120,24 @@ class ArsipImportController extends Controller
                 'BAGAN BATU' => 'UPT Bagan Batu',
                 'KUANTAN SINGINGI' => 'UPT Taluk Kuantan',
                 'TELUK KUANTAN' => 'UPT Taluk Kuantan',
+                'UP PENGELOLAAN PENDAPATAN PEKANBARU' => 'UPT Pku Kota',
+                'UP PENGELOLAAN PENDAPATAN PEKANBARU KOTA' => 'UPT Pku Kota',
+                'UP PENGELOLAAN PENDAPATAN PEKANBARU SELATAN' => 'UPT Simpang Tiga',
             ];
 
             $cleanUpperSheet = trim(strtoupper($sheetName));
             $foundUnit = null;
             $headerUnitText = null;
 
-            // LANGKAH 1 (PRIORITAS UTAMA): Scan Teks Header Resmi Baris 1-8 ("UNIT KERJA : ...")
-            for ($rIdx = 0; $rIdx < min(8, count($rows)); $rIdx++) {
-                $rowArr = is_array($rows[$rIdx]) ? $rows[$rIdx] : $rows[$rIdx]->toArray();
-                $rowText = strtoupper(implode(' ', array_map(function($v) { return is_scalar($v) ? (string)$v : ''; }, $rowArr)));
+            // LANGKAH 1 (PRIORITAS UTAMA): Scan Teks Header Resmi Baris 1-10 ("UNIT KERJA : ...")
+            $rIdx = 0;
+            foreach ($rows as $row) {
+                if ($rIdx >= 10) break;
+                
+                $rowArr = is_array($row) ? $row : (method_exists($row, 'toArray') ? $row->toArray() : (array)$row);
+                $rowText = strtoupper(implode(' ', array_map(function($v) { return is_scalar($v) ? trim((string)$v) : ''; }, $rowArr)));
+                // Hapus multiple spaces dan karakter aneh
+                $rowText = preg_replace('/\s+/', ' ', $rowText);
                 
                 // Cari teks khusus "UNIT KERJA : ..."
                 if (preg_match('/UNIT\s+KERJA\s*:?\s*(.+)$/i', trim($rowText), $m)) {
@@ -144,16 +152,60 @@ class ArsipImportController extends Controller
                         break;
                     }
                 }
+                $rIdx++;
+            }
+
+            // Hitung headerIndex dan numberingRowIndex terlebih dahulu
+            $headerIndex = -1;
+            $numberingRowIndex = -1;
+
+            foreach ($rows as $index => $row) {
+                $rowArray = is_array($row) ? $row : $row->toArray();
+                $normalizedKeys = array_map(function($val) {
+                    return $this->normalizeHeader((string) $val);
+                }, $rowArray);
+
+                $numericCount = 0;
+                foreach ($rowArray as $v) {
+                    if (is_numeric($v) && (int)$v >= 1 && (int)$v <= 11) $numericCount++;
+                }
+                if ($numericCount >= 5) {
+                    $numberingRowIndex = $index;
+                    continue;
+                }
+
+                $matches = 0;
+                if (in_array('kode_klasifikasi', $normalizedKeys) || in_array('kode', $normalizedKeys) || in_array('klasifikasi', $normalizedKeys)) $matches++;
+                if (in_array('uraian_informasi_arsip', $normalizedKeys) || in_array('uraian', $normalizedKeys) || in_array('informasi', $normalizedKeys)) $matches++;
+                if (in_array('kurun_waktu', $normalizedKeys) || in_array('tahun', $normalizedKeys)) $matches++;
+
+                if ($matches >= 2) {
+                    $headerIndex = $index;
+                }
             }
 
             // Jika ada Teks Header Resmi "UNIT KERJA", cari unit di database yang cocok dengan Teks Header tersebut
+            $foundViaExactMap = false;
             if (!empty($headerUnitText)) {
                 $upperHeader = strtoupper($headerUnitText);
-                foreach (Unit::all() as $u) {
-                    $cleanDbName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($u->nama_unit)));
-                    if (!empty($cleanDbName) && strlen($cleanDbName) >= 3 && str_contains($upperHeader, $cleanDbName)) {
-                        $foundUnit = $u;
+                
+                // 1. Cek di Exact Map dulu untuk header
+                foreach ($exactMap as $key => $val) {
+                    if (str_contains($upperHeader, $key) || $upperHeader === $key) {
+                        $foundUnit = Unit::where('nama_unit', $val)->first();
+                        $foundViaExactMap = true;
                         break;
+                    }
+                }
+                
+                // 2. Jika tidak ketemu di Exact Map, baru cari fuzzy di DB
+                if (!$foundUnit) {
+                    foreach (Unit::all() as $u) {
+                        $cleanDbName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($u->nama_unit)));
+                        if (!empty($cleanDbName) && strlen($cleanDbName) >= 3 && str_contains($upperHeader, $cleanDbName)) {
+                            $foundUnit = $u;
+                            break;
+                        }
                     }
                 }
             }
@@ -179,18 +231,31 @@ class ArsipImportController extends Controller
                 }
             }
 
+            $skipToIndex = max($headerIndex, $numberingRowIndex);
+
             // LANGKAH 4 (AI GROQ): Panggil AI Groq jika belum ketemu
             $groqKey = config('services.groq.key') ?: env('GROQ_API_KEY');
             if (! $foundUnit && !empty($groqKey)) {
                 $headerCombinedText = '';
-                for ($rIdx = 0; $rIdx < min(8, count($rows)); $rIdx++) {
+                for ($rIdx = 0; $rIdx < min(10, count($rows)); $rIdx++) {
                     $rowArr = is_array($rows[$rIdx]) ? $rows[$rIdx] : $rows[$rIdx]->toArray();
-                    $headerCombinedText .= implode(' ', array_map(function($v) { return is_scalar($v) ? (string)$v : ''; }, $rowArr)) . ' ';
+                    $headerCombinedText .= ($rIdx + 1) . '. ' . implode(' | ', array_map(function($v) { return is_scalar($v) ? trim((string)$v) : ''; }, $rowArr)) . "\n";
+                }
+
+                // Kumpulkan 2 baris sample data setelah header
+                $sampleRows = [];
+                for ($rIdx = max($numberingRowIndex, $headerIndex) + 1; $rIdx < min($skipToIndex + 4, count($rows)); $rIdx++) {
+                    if (is_numeric($headerIndex) && $rIdx <= $headerIndex) continue;
+                    $rData = is_array($rows[$rIdx]) ? $rows[$rIdx] : $rows[$rIdx]->toArray();
+                    if (!empty(trim(implode('', $rData)))) {
+                        $sampleRows[] = $rData;
+                    }
+                    if (count($sampleRows) >= 2) break;
                 }
 
                 $groqService = new \App\Services\GroqService();
                 $allUnits = Unit::orderBy('nama_unit')->get(['id', 'nama_unit'])->toArray();
-                $aiResult = $groqService->matchUnitWithAI($sheetName, $headerCombinedText, $allUnits);
+                $aiResult = $groqService->matchUnitWithAI($sheetName, $headerCombinedText, $sampleRows, $allUnits);
 
                 if (!empty($aiResult['matched_unit_id'])) {
                     $foundUnit = Unit::find($aiResult['matched_unit_id']);
@@ -198,7 +263,7 @@ class ArsipImportController extends Controller
             }
 
             // Verifikasi Akhir: Jika ada Teks Header Resmi (UNIT KERJA), pastikan match tidak bertentangan!
-            if (!empty($headerUnitText)) {
+            if (!empty($headerUnitText) && !$foundViaExactMap) {
                 $upperHeader = strtoupper($headerUnitText);
                 if ($foundUnit) {
                     $cleanDb = trim(str_replace(['UPT ', 'UP '], '', strtoupper($foundUnit->nama_unit)));
@@ -216,12 +281,20 @@ class ArsipImportController extends Controller
             } elseif (!empty($headerUnitText)) {
                 $matchedUnitId = '+new'; // Auto-select '+new' karena ini unit baru dari header resmi!
                 $detectedUnitName = $headerUnitText;
+            } elseif (isset($exactMap[$cleanUpperSheet])) {
+                $matchedUnitId = '+new'; // Auto-select '+new' jika nama sheet ada di exact map tapi unit belum ada di DB
+                $detectedUnitName = $exactMap[$cleanUpperSheet];
             } else {
-                $matchedUnitId = null;
-                $detectedUnitName = '-';
+                $matchedUnitId = '+new';
+                $detectedUnitName = ucwords(strtolower(trim(str_replace(['UPT', 'UP', '[', ']'], '', $sheetName))));
+                if (str_starts_with(strtoupper(trim($sheetName)), 'UP ')) {
+                    $detectedUnitName = 'UP ' . $detectedUnitName;
+                } elseif (str_starts_with(strtoupper(trim($sheetName)), 'UPT ')) {
+                    $detectedUnitName = 'UPT ' . $detectedUnitName;
+                }
             }
 
-            $sheetMatchStatus = 'unmatched';
+            $sheetMatchStatus = 'warning';
             if ($foundUnit) {
                 if (strtoupper(trim($foundUnit->nama_unit)) === strtoupper(trim($sheetName))) {
                     $sheetMatchStatus = 'exact';
@@ -230,6 +303,8 @@ class ArsipImportController extends Controller
                 }
             } elseif (!empty($headerUnitText)) {
                 $sheetMatchStatus = 'warning'; // Unit baru dari header
+            } else {
+                $sheetMatchStatus = 'warning'; // Unit baru dari nama sheet
             }
 
             $sheetSummary[$sheetName] = [
@@ -241,35 +316,6 @@ class ArsipImportController extends Controller
                 'valid_rows' => 0,
             ];
 
-            $headerIndex = -1;
-            $numberingRowIndex = -1;
-
-            foreach ($rows as $index => $row) {
-                $rowArray = $row->toArray();
-                $normalizedKeys = array_map(function($val) {
-                    return $this->normalizeHeader((string) $val);
-                }, $rowArray);
-
-                $numericCount = 0;
-                foreach ($rowArray as $v) {
-                    if (is_numeric($v) && (int)$v >= 1 && (int)$v <= 11) $numericCount++;
-                }
-                if ($numericCount >= 5) {
-                    $numberingRowIndex = $index;
-                    continue;
-                }
-
-                $matches = 0;
-                if (in_array('kode_klasifikasi', $normalizedKeys) || in_array('kode', $normalizedKeys) || in_array('klasifikasi', $normalizedKeys)) $matches++;
-                if (in_array('uraian_informasi_arsip', $normalizedKeys) || in_array('uraian', $normalizedKeys) || in_array('informasi', $normalizedKeys)) $matches++;
-                if (in_array('kurun_waktu', $normalizedKeys) || in_array('tahun', $normalizedKeys)) $matches++;
-
-                if ($matches >= 2) {
-                    $headerIndex = $index;
-                }
-            }
-
-            $skipToIndex = max($headerIndex, $numberingRowIndex);
             if ($skipToIndex === -1) {
                 continue;
             }
@@ -496,12 +542,18 @@ class ArsipImportController extends Controller
     public function previewAjax(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+            'file' => ['required', 'file', 'max:102400'],
         ], [], ['file' => 'file excel']);
 
         $uploaded = $request->file('file');
         if (!$uploaded || !$uploaded->isValid()) {
             return response()->json(['success' => false, 'error' => 'File tidak valid.'], 422);
+        }
+
+        // Validasi ekstensi (lebih fleksibel dari mimes)
+        $ext = strtolower($uploaded->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+            return response()->json(['success' => false, 'error' => 'Hanya file Excel (.xlsx, .xls, .csv) yang didukung. File kamu: .' . $ext], 422);
         }
 
         $import = new \App\Imports\ArsipPreviewImport;
@@ -512,22 +564,9 @@ class ArsipImportController extends Controller
             return response()->json(['success' => false, 'error' => 'File Excel kosong atau format tidak didukung.'], 422);
         }
 
-        // Proses file yang sama seperti preview()
         $token = Str::random(40);
-        $allUploadedSheets = [];
-        foreach (new \Illuminate\Support\Collection([$uploaded]) as $uploadedExcel) {
-            $import2 = new \App\Imports\ArsipPreviewImport;
-            \Maatwebsite\Excel\Facades\Excel::import($import2, $uploadedExcel);
-            foreach ($import2->sheets ?? [] as $sName => $rows) {
-                $allUploadedSheets[$sName] = $rows;
-            }
-        }
-        $sheets = $allUploadedSheets;
-
         $preview = [];
         $sheetSummary = [];
-        $matchedUnitId = null;
-        $detectedUnitName = '-';
 
         foreach ($sheets as $sheetName => $rows) {
             $upperSheetName = strtoupper(trim($sheetName));
@@ -541,12 +580,61 @@ class ArsipImportController extends Controller
             // Exact map
             $exactMap = ['UP TAPUNG HILIR' => 'UP Tapung Hilir', 'UPT TAPUNG' => 'UP Tapung', 'UP TAPUNG' => 'UP Tapung', 'E-SAMSAT' => 'E-Samsat', 'E SAMSAT' => 'E-Samsat', 'UP BANDAR SEKIJANG' => 'UP Sekijang', 'UP KEPENUHAN' => 'UP Kepenuhan', 'UP SAMKEL 1' => 'UP Samsat Keliling 1', 'UP SAMKEL 2' => 'UP Samsat Keliling 2', 'SAMKEL INHU' => 'UP Samsat Keliling Inhu', 'UP. KEMPAS' => 'UP Kempas Inhil', 'UP. BELILAS' => 'UP Belilas', 'UP.PINGGIR' => 'UP Pinggir', 'UJUNG TANJUNG' => 'UP Ujung Tanjung', 'UP AIR MOLEK' => 'UPT Air Molek', 'UP. RUPAT' => 'UP Rupat', 'KUBANG' => 'UPT Kubang', 'SIAK' => 'UPT Siak', 'BENGKALIS' => 'UPT Bengkalis', 'TEMBILAHAN' => 'UPT Tembilahan', 'RENGAT' => 'UPT Rengat', 'BANGKINANG' => 'UPT Bangkinang', 'UP PANGKALAN KURAS' => 'UP PKL Kuras', 'UP UJUNG BATU' => 'UP Pengelolaan Pendapatan Ujung Batu', 'RUMBAI' => 'UPT Rumbai', 'UP DURI' => 'UP Duri', 'PERAWANG' => 'UPT Perawang', 'SLAT PNJNG' => 'UPT Selat Panjang', 'PKU KOTA' => 'UPT Pekanbaru Kota', 'SAMSAT MPP' => 'Samsat MPP', 'SIMPANG TIGA' => 'UPT Simpang Tiga', 'PANAM' => 'UPT Panam', 'PELALAWAN' => 'UPT Pelalawan', 'P PANGARAIAN' => 'UPT Pasir Pangaraian', 'BAGA SIAPIAPI' => 'UPT Bagan Siapi-Api', 'BAGAN BATU' => 'UPT Bagan Batu', 'KUANTAN SINGINGI' => 'UPT Taluk Kuantan', 'TELUK KUANTAN' => 'UPT Taluk Kuantan'];
 
-            $foundUnit = Unit::where('nama_unit', $exactMap[trim(strtoupper($sheetName))] ?? '')->first();
-            if (!$foundUnit) {
+            $cleanUpperSheet = trim(strtoupper($sheetName));
+            $mappedUnitName = $exactMap[$cleanUpperSheet] ?? null;
+
+            $foundUnit = Unit::where('nama_unit', $mappedUnitName ?? '')->first();
+            if (!$foundUnit && $mappedUnitName) {
+                $matchedUnitId = '+new';
+                $detectedUnitName = $mappedUnitName;
+            }
+
+            if (!$foundUnit && !$mappedUnitName) {
                 $cleanSheetName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($sheetName)));
                 foreach (Unit::all() as $u) {
                     $cleanDbName = trim(str_replace(['UPT ', 'UP '], '', strtoupper($u->nama_unit)));
                     if (!empty($cleanSheetName) && strlen($cleanSheetName) >= 3 && (str_contains($cleanDbName, $cleanSheetName) || str_contains($cleanSheetName, $cleanDbName))) { $foundUnit = $u; break; }
+                }
+            }
+
+            // Groq AI jika unit belum ketemu
+            if (!$foundUnit) {
+                $groqKey = config('services.groq.key') ?: env('GROQ_API_KEY');
+                if (!empty($groqKey)) {
+                    $fullHeaderText = '';
+                    for ($rIdx = 0; $rIdx < min(10, count($rows)); $rIdx++) {
+                        $rowArr = is_array($rows[$rIdx]) ? $rows[$rIdx] : $rows[$rIdx]->toArray();
+                        $fullHeaderText .= ($rIdx + 1) . '. ' . implode(' | ', array_map(fn($v) => is_scalar($v) ? trim((string)$v) : '', $rowArr)) . "\n";
+                    }
+
+                    // Sample data rows — skip header (cari baris setelah baris ber-nomor)
+                    $sampleRows = [];
+                    $afterHeader = false;
+                    $headerFound = false;
+                    foreach ($rows as $rIdx => $row) {
+                        $rData = is_array($rows[$rIdx]) ? $rows[$rIdx] : $rows[$rIdx]->toArray();
+                        // Cari baris dengan data numerik (nomor urut 1,2,3...) sebagai penanda data mulai
+                        if (!$headerFound && is_numeric(trim((string)($rData[0] ?? ''))) && (int)$rData[0] >= 1 && (int)$rData[0] <= 3) {
+                            $headerFound = true;
+                            // Ambil data setelah header ditemukan
+                            $nextIdx = $rIdx + 1;
+                            if (isset($rows[$nextIdx])) {
+                                $nextRow = is_array($rows[$nextIdx]) ? $rows[$nextIdx] : $rows[$nextIdx]->toArray();
+                                if (!empty(trim(implode('', $nextRow)))) $sampleRows[] = $nextRow;
+                            }
+                            $nextIdx2 = $rIdx + 2;
+                            if (isset($rows[$nextIdx2])) {
+                                $nextRow2 = is_array($rows[$nextIdx2]) ? $rows[$nextIdx2] : $rows[$nextIdx2]->toArray();
+                                if (!empty(trim(implode('', $nextRow2)))) $sampleRows[] = $nextRow2;
+                            }
+                            break;
+                        }
+                    }
+
+                    $groqService = new \App\Services\GroqService();
+                    $allUnits = Unit::orderBy('nama_unit')->get(['id', 'nama_unit'])->toArray();
+                    $aiResult = $groqService->matchUnitWithAI($sheetName, $fullHeaderText, $sampleRows, $allUnits);
+                    if (!empty($aiResult['matched_unit_id'])) $foundUnit = Unit::find($aiResult['matched_unit_id']);
                 }
             }
 
@@ -630,7 +718,7 @@ class ArsipImportController extends Controller
         return response()->json([
             'success' => true,
             'token' => $token,
-            'redirect' => route('arsips.import.show_preview', ['token' => $token]),
+            'redirect' => route('arsips.import.show_preview', ['token' => $token], false),
         ]);
     }
 

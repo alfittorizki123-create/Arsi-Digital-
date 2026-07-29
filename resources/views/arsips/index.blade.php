@@ -68,49 +68,65 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-md">
         <div>
             <h2 class="font-display-md text-display-md text-on-surface">
-                {{ isset($currentUnit) ? 'Daftar Arsip: ' . $currentUnit->nama_unit : 'Daftar Arsip Pajak' }}
+                {{ isset($currentUnit) ? 'Arsip Kantor: ' . $currentUnit->nama_unit : 'Daftar Arsip Pajak' }}
             </h2>
-            <p class="text-body-md text-on-surface-variant mt-1">Kelola dan telusuri dokumen arsip perpajakan daerah.</p>
+            <p class="text-body-md text-on-surface-variant mt-1">Langkah 2: gunakan tombol dan filter di halaman ini untuk mencari, menambah, membuka file, atau export arsip.</p>
         </div>
         <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-            <a href="{{ route('arsips.create', request('unit_id') ? ['unit_id' => request('unit_id')] : []) }}" 
+            <a href="{{ route('arsips.create') }}" 
                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all shadow-xs">
                 <span class="material-symbols-outlined text-sm">add</span>
-                <span>Tambah Arsip</span>
+                <span>Tambah Arsip Baru</span>
             </a>
-            @if(request('unit_id') && isset($currentUnit))
+            @if(isset($currentUnit))
                 <button type="button" @@click="selectedReportIds = []; exportModalOpen = true" 
                         style="background-color: #059669; color: #ffffff;"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold text-xs hover:opacity-90 transition-all shadow-xs">
                     <span class="material-symbols-outlined text-sm">download</span>
-                    <span>Export Excel</span>
+                    <span>Download Excel</span>
                 </button>
                 <button type="button" @@click="editUnitModalOpen = true" 
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-outline-variant text-on-surface-variant font-semibold text-xs hover:bg-surface-container transition-all shadow-xs" title="Edit Info Unit {{ $currentUnit->nama_unit }}">
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-outline-variant text-on-surface-variant font-semibold text-xs hover:bg-surface-container transition-all shadow-xs" title="Edit Info UP/UPT {{ $currentUnit->nama_unit }}">
                     <span class="material-symbols-outlined text-sm">edit</span>
-                    <span>Edit Unit</span>
+                    <span>Edit Data Kantor</span>
                 </button>
             @endif
             <a href="{{ route('arsips.pilih_unit') }}" 
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-outline-variant text-on-surface-variant font-semibold text-xs hover:bg-surface-container transition-all shadow-xs" title="Ganti Unit UPT/UP">
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-outline-variant text-on-surface-variant font-semibold text-xs hover:bg-surface-container transition-all shadow-xs" title="Ganti UP/UPT">
                 <span class="material-symbols-outlined text-sm">swap_horiz</span>
-                    <span>Ganti Unit</span>
+                    <span>Pilih UP/UPT Lain</span>
             </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-stack-md">
+        <div class="rounded-xl border border-primary/30 bg-primary-fixed/20 p-4">
+            <p class="font-bold text-on-surface text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">search</span>Cari Arsip</p>
+            <p class="text-xs text-on-surface-variant mt-1">Ketik kata kunci lalu klik “Terapkan Filter”.</p>
+        </div>
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <p class="font-bold text-on-surface text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">attach_file</span>Upload File</p>
+            <p class="text-xs text-on-surface-variant mt-1">Klik tombol “Upload File” pada baris arsip.</p>
+        </div>
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <p class="font-bold text-on-surface text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">visibility</span>Lihat Detail</p>
+            <p class="text-xs text-on-surface-variant mt-1">Klik “Lihat” untuk membaca data lengkap.</p>
+        </div>
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <p class="font-bold text-on-surface text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">download</span>Download Laporan</p>
+            <p class="text-xs text-on-surface-variant mt-1">Klik “Download Excel” untuk mencetak rekap.</p>
         </div>
     </div>
 
     <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-3 sm:p-4 mb-stack-lg shadow-sm">
         <form id="filter-form" method="GET" action="{{ route('arsips.index') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-stack-md">
-            @if(request('unit_id'))
-                <input type="hidden" name="unit_id" value="{{ request('unit_id') }}">
-            @endif
             <div class="lg:col-span-1">
                 <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Pencarian</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-size: 18px;">search</span>
                     <input type="text" name="search" value="{{ request('search') }}"
                            class="w-full pl-9 pr-3 py-2 border border-outline-variant rounded bg-surface focus:outline-none focus:border-primary text-body-md"
-                           placeholder="Kode / Uraian / No. Arsip">
+                           placeholder="Contoh: nama berkas, kode, nomor arsip">
                 </div>
             </div>
             <div>
@@ -123,24 +139,12 @@
                 </select>
             </div>
             <div>
-                <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Unit/UPT/UP</label>
-                @if (request('unit_id'))
-                    <input type="hidden" name="unit_id" value="{{ request('unit_id') }}">
-                    <select disabled class="w-full px-3 py-2 border border-outline-variant rounded bg-surface-container text-on-surface-variant cursor-not-allowed opacity-80 text-body-md font-medium">
-                        @foreach ($units as $unit)
-                            @if (request('unit_id') == $unit->id)
-                                <option value="{{ $unit->id }}" selected>{{ $unit->nama_unit }}</option>
-                            @endif
-                        @endforeach
-                    </select>
-                @else
-                    <select name="unit_id" class="w-full px-3 py-2 border border-outline-variant rounded bg-surface focus:outline-none focus:border-primary text-body-md text-on-surface">
-                        <option value="">Semua Unit</option>
-                        @foreach ($units as $unit)
-                            <option value="{{ $unit->id }}" @selected(request('unit_id') == $unit->id)>{{ $unit->nama_unit }}</option>
-                        @endforeach
-                    </select>
-                @endif
+                <label class="block text-label-md font-label-md text-on-surface-variant mb-1">UP/UPT</label>
+                <select disabled class="w-full px-3 py-2 border border-outline-variant rounded bg-surface-container text-on-surface-variant cursor-not-allowed opacity-80 text-body-md font-medium">
+                    @if(isset($currentUnit))
+                        <option value="{{ $currentUnit->id }}" selected>{{ $currentUnit->nama_unit }}</option>
+                    @endif
+                </select>
             </div>
             <div>
                 <label class="block text-label-md font-label-md text-on-surface-variant mb-1">Kurun Waktu</label>
@@ -187,9 +191,9 @@
             </div>
             <div class="sm:col-span-2 md:col-span-3 lg:col-span-5 flex flex-wrap items-center justify-start gap-3 pt-3 border-t border-outline-variant/60 mt-1">
                 <button type="submit" class="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-primary text-on-primary font-bold text-label-md hover:bg-primary/90 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined text-sm">filter_alt</span> Terapkan Filter
+                    <span class="material-symbols-outlined text-sm">filter_alt</span> Cari / Terapkan Filter
                 </button>
-                <a href="{{ request('unit_id') ? route('arsips.index', ['unit_id' => request('unit_id')]) : route('arsips.pilih_unit') }}" class="flex items-center gap-1 px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-label-md font-bold hover:bg-surface-container transition-colors">
+                <a href="{{ route('arsips.index') }}" class="flex items-center gap-1 px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-label-md font-bold hover:bg-surface-container transition-colors">
                     <span class="material-symbols-outlined text-sm">restart_alt</span> Reset
                 </a>
             </div>
@@ -199,8 +203,8 @@
     @if ($groupedArsips->isEmpty())
          <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 sm:p-12 text-center shadow-sm">
             <span class="material-symbols-outlined text-4xl mb-2 text-outline">folder_off</span>
-            <p class="text-body-md text-on-surface-variant">Belum ada data arsip.</p>
-            <a href="{{ route('arsips.create') }}" class="text-primary font-medium hover:underline">Tambah arsip pertama</a>
+            <p class="text-body-md text-on-surface-variant">Belum ada data arsip untuk kantor ini.</p>
+            <a href="{{ route('arsips.create') }}" class="text-primary font-bold hover:underline">Klik di sini untuk tambah arsip pertama</a>
         </div>
     @else
         <div class="space-y-stack-md" x-data="{ 
@@ -218,7 +222,7 @@
             @foreach ($groupedArsips as $groupKey => $items)
                 @php
                     $firstItem = $items->first();
-                    $unitName = $currentUnit ? $currentUnit->nama_unit : ($firstItem->unit?->nama_unit ?? 'Semua Unit');
+                    $unitName = $currentUnit ? $currentUnit->nama_unit : ($firstItem->unit?->nama_unit ?? 'Semua UP/UPT');
                     $tahunVal = $currentUnit ? $groupKey : ($firstItem->kurun_waktu ?? '2023');
                     
                     // Attach 1-based table row index to each item in $items
@@ -249,7 +253,7 @@
                     $boksSummaryText = !empty($boksInfoParts) ? implode(', ', $boksInfoParts) : null;
                 @endphp
                 <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
-                    {{-- Header Accordion per Unit / Tahun --}}
+                    {{-- Header Accordion per UP/UPT / Tahun --}}
                     <button @@click="toggleGroup('{{ $groupKey }}')"
                             class="w-full px-stack-md py-4 bg-surface hover:bg-surface-container/60 transition-colors flex items-center justify-between text-left">
                         <div class="flex items-center gap-3">
@@ -376,14 +380,14 @@
         <div class="mt-stack-md">{{ $arsips->links() }}</div>
     @endif
 
-    @if(request('unit_id') && isset($currentUnit))
+    @if(isset($currentUnit))
     <div x-show="editUnitModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div x-show="editUnitModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-black/50" aria-hidden="true" @@click="editUnitModalOpen = false"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="editUnitModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-full px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-surface rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:p-6">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-headline-sm font-bold text-on-surface" id="modal-title">Edit Unit/UPT</h3>
+                    <h3 class="text-headline-sm font-bold text-on-surface" id="modal-title">Edit UP/UPT</h3>
                     <button type="button" @@click="editUnitModalOpen = false" class="text-on-surface-variant hover:text-on-surface">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -393,12 +397,12 @@
                     @method('PUT')
                     <div class="space-y-4">
                         <div>
-                            <label for="kode_unit" class="block text-label-md font-label-md text-on-surface-variant mb-1">Kode Unit <span class="text-error">*</span></label>
+                            <label for="kode_unit" class="block text-label-md font-label-md text-on-surface-variant mb-1">Kode UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="kode_unit" id="kode_unit" value="{{ old('kode_unit', $currentUnit->kode_unit) }}" required class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary text-body-md @error('kode_unit') border-error @else border-outline-variant @enderror" placeholder="Contoh: UPT-001">
                             @error('kode_unit') <p class="mt-1 text-sm text-error">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label for="nama_unit" class="block text-label-md font-label-md text-on-surface-variant mb-1">Nama Unit <span class="text-error">*</span></label>
+                            <label for="nama_unit" class="block text-label-md font-label-md text-on-surface-variant mb-1">Nama UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="nama_unit" id="nama_unit" value="{{ old('nama_unit', $currentUnit->nama_unit) }}" required class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary text-body-md @error('nama_unit') border-error @else border-outline-variant @enderror" placeholder="Contoh: UPT Pekanbaru Kota">
                             @error('nama_unit') <p class="mt-1 text-sm text-error">{{ $message }}</p> @enderror
                         </div>
@@ -419,7 +423,7 @@
     @endif
 
     {{-- Import Excel Modal --}}
-    @if(request('unit_id') && isset($currentUnit))
+    @if(isset($currentUnit))
     <div x-show="importModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div x-show="importModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-black/50" aria-hidden="true" @@click="importModalOpen = false"></div>
@@ -440,7 +444,7 @@
                             <label class="block text-label-md font-label-md text-on-surface-variant mb-1">
                                 File Excel <span class="text-error">*</span>
                             </label>
-                            <input type="file" name="file" id="files_modal" accept=".xlsx,.xls,.csv" required
+                            <input type="file" name="file" id="files_modal" required
                                    class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary text-body-md file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed file:text-label-md file:font-semibold cursor-pointer"
                                    onchange="uploadExcelModal(this)">
                             <p class="mt-2 text-label-md text-on-surface-variant">Format: .xlsx, .xls, .csv · Maksimal 20 MB</p>
@@ -472,32 +476,43 @@
         document.getElementById('import_modal_loading').classList.remove('hidden');
         document.getElementById('import_modal_error').classList.add('hidden');
 
+        // Jeda kecil untuk Android Google Drive
+        await new Promise(r => setTimeout(r, 300));
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+        formData.append('_token', csrfToken);
 
         try {
             const res = await fetch('{{ route('arsips.import.preview_ajax') }}', {
                 method: 'POST',
-                headers: { 'Accept': 'application/json' },
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: formData
             });
+
+            if (!res.ok) {
+                let msg = 'Gagal memproses file (HTTP ' + res.status + ').';
+                try { const errData = await res.json(); if (errData.error) msg = errData.error; } catch (e) {}
+                throw new Error(msg);
+            }
 
             const data = await res.json();
 
             if (data.success && data.redirect) {
                 window.location.href = data.redirect;
             } else {
-                document.getElementById('import_modal_loading').classList.add('hidden');
-                document.getElementById('import_modal_error_text').innerText = data.error || 'Gagal memproses file.';
-                document.getElementById('import_modal_error').classList.remove('hidden');
-                showToast('error', data.error || 'Gagal memproses file.');
+                throw new Error(data.error || 'Format tidak dikenali.');
             }
         } catch (err) {
             document.getElementById('import_modal_loading').classList.add('hidden');
-            document.getElementById('import_modal_error_text').innerText = 'Koneksi gagal.';
+            document.getElementById('import_modal_error_text').innerText = err.message || 'Gagal upload.';
             document.getElementById('import_modal_error').classList.remove('hidden');
-            showToast('error', 'Koneksi gagal.');
+            showToast('error', err.message || 'Gagal upload.');
         }
     }
     </script>
@@ -523,14 +538,33 @@
 
                 {{-- Area Batch Mass Upload 100+ Files --}}
                 <div class="mb-4 p-4 rounded-xl border-2 border-dashed border-primary/40 bg-surface-container-lowest hover:bg-primary-fixed-dim/10 transition-colors text-center relative">
-                    <input type="file" id="modalBatchFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+                    <input type="file" id="modalBatchFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                           onchange="startBatchUpload(this)">
+                           onchange="prepareBatchUpload(this)">
                     <div class="flex flex-col items-center justify-center gap-1.5 pointer-events-none">
                         <span class="material-symbols-outlined text-3xl text-primary">cloud_upload</span>
-                        <p class="text-sm font-bold text-on-surface">➕ Tambah / Upload Banyak File (Bisa pilih 100+ PDF & Foto sekaligus!)</p>
-                        <p class="text-xs text-on-surface-variant">Drag & drop atau klik di sini. File akan diunggah otomatis satu per satu tanpa batasan.</p>
+                        <p class="text-sm font-bold text-on-surface">➕ Pilih Banyak File / Gambar Sekaligus</p>
+                        <p class="text-xs text-on-surface-variant">Di HP: tahan/centang beberapa foto/file di galeri/file manager, lalu klik Pilih. Bisa pilih ulang untuk menambah daftar sebelum Upload Semua.</p>
                     </div>
+                </div>
+
+                {{-- Verifikasi file sebelum upload --}}
+                <div id="batchVerifyContainer" class="mb-4 hidden p-3 rounded-xl border border-primary/30 bg-primary-fixed/10">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p id="batchVerifyTitle" class="text-sm font-bold text-on-surface">Verifikasi File Upload</p>
+                            <p class="text-xs text-on-surface-variant">Pastikan file yang dipilih sudah benar sebelum diupload.</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="cancelBatchSelection()" class="px-3 py-1.5 rounded-lg border border-outline-variant text-xs font-bold text-on-surface-variant hover:bg-surface-container">
+                                Batal
+                            </button>
+                            <button type="button" onclick="startBatchUpload()" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary/90 shadow-sm">
+                                Upload Semua
+                            </button>
+                        </div>
+                    </div>
+                    <div id="batchVerifyList" class="max-h-40 overflow-y-auto space-y-2"></div>
                 </div>
 
                 {{-- Progress Bar Baris Batch Upload --}}
@@ -560,11 +594,16 @@
 
     <script>
     let currentArsipId = null;
+    let pendingBatchFiles = [];
+    const arsipFilePreviewUrlTemplate = @json(route('arsip-files.preview', ['arsipFile' => '__ARSIP_FILE_ID__']));
 
     function openFilesModal(arsipId, files, uraian, legacyUrl) {
         currentArsipId = arsipId;
+        pendingBatchFiles = [];
         document.getElementById('filesModalTitle').innerText = uraian || 'Detail Berkas Arsip';
         document.getElementById('batchProgressContainer').classList.add('hidden');
+        document.getElementById('batchVerifyContainer').classList.add('hidden');
+        document.getElementById('modalBatchFileInput').value = '';
         renderFileList(files, legacyUrl);
         document.getElementById('filesModal').classList.remove('hidden');
     }
@@ -578,7 +617,9 @@
             countFooter.innerText = `Total ${files.length} Lampiran Tersimpan`;
             files.forEach((f) => {
                 const isImage = (f.tipe_file && f.tipe_file.includes('image')) || /\.(jpe?g|png|webp)$/i.test(f.nama_file);
-                const fileUrl = f.url || ('/storage/' + f.path_file);
+                const fileUrl = f.id
+                    ? arsipFilePreviewUrlTemplate.replace('__ARSIP_FILE_ID__', f.id)
+                    : (f.url || ('/storage/' + f.path_file));
 
                 const item = document.createElement('div');
                 item.className = 'p-3 rounded-xl border border-outline-variant bg-surface-container-lowest hover:border-primary/50 transition-all flex items-center justify-between gap-3 shadow-sm';
@@ -623,17 +664,102 @@
         }
     }
 
-    async function startBatchUpload(input) {
+    function prepareBatchUpload(input) {
         if (!input.files || input.files.length === 0 || !currentArsipId) return;
 
-        const filesArr = Array.from(input.files);
+        pendingBatchFiles = pendingBatchFiles.concat(Array.from(input.files));
+
+        const verifyContainer = document.getElementById('batchVerifyContainer');
+        const verifyTitle = document.getElementById('batchVerifyTitle');
+        const verifyList = document.getElementById('batchVerifyList');
+
+        verifyTitle.innerText = `Verifikasi ${pendingBatchFiles.length} file sebelum upload`;
+        verifyList.innerHTML = '';
+
+        pendingBatchFiles.forEach((file, index) => {
+            const isImage = /\.(jpe?g|png|webp)$/i.test(file.name);
+            const sizeKb = (file.size / 1024).toFixed(1);
+
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between gap-3 p-2 rounded-lg bg-surface-container-lowest border border-outline-variant';
+            item.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined text-primary text-lg">${isImage ? 'image' : 'description'}</span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-on-surface truncate" title="${file.name}">${index + 1}. ${file.name}</p>
+                        <p class="text-[11px] text-on-surface-variant">${sizeKb} KB</p>
+                    </div>
+                </div>
+                <button type="button" onclick="removePendingBatchFile(${index})" class="text-[11px] font-bold text-error shrink-0 hover:underline">Hapus</button>
+            `;
+            verifyList.appendChild(item);
+        });
+
+        document.getElementById('batchProgressContainer').classList.add('hidden');
+        verifyContainer.classList.remove('hidden');
+        input.value = '';
+    }
+
+    function removePendingBatchFile(index) {
+        pendingBatchFiles.splice(index, 1);
+        renderPendingBatchFiles();
+    }
+
+    function renderPendingBatchFiles() {
+        const verifyContainer = document.getElementById('batchVerifyContainer');
+        const verifyTitle = document.getElementById('batchVerifyTitle');
+        const verifyList = document.getElementById('batchVerifyList');
+
+        if (!pendingBatchFiles.length) {
+            cancelBatchSelection();
+            return;
+        }
+
+        verifyTitle.innerText = `Verifikasi ${pendingBatchFiles.length} file sebelum upload`;
+        verifyList.innerHTML = '';
+
+        pendingBatchFiles.forEach((file, index) => {
+            const isImage = /\.(jpe?g|png|webp)$/i.test(file.name);
+            const sizeKb = (file.size / 1024).toFixed(1);
+
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between gap-3 p-2 rounded-lg bg-surface-container-lowest border border-outline-variant';
+            item.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined text-primary text-lg">${isImage ? 'image' : 'description'}</span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-on-surface truncate" title="${file.name}">${index + 1}. ${file.name}</p>
+                        <p class="text-[11px] text-on-surface-variant">${sizeKb} KB</p>
+                    </div>
+                </div>
+                <button type="button" onclick="removePendingBatchFile(${index})" class="text-[11px] font-bold text-error shrink-0 hover:underline">Hapus</button>
+            `;
+            verifyList.appendChild(item);
+        });
+
+        document.getElementById('batchProgressContainer').classList.add('hidden');
+        verifyContainer.classList.remove('hidden');
+    }
+
+    function cancelBatchSelection() {
+        pendingBatchFiles = [];
+        document.getElementById('modalBatchFileInput').value = '';
+        document.getElementById('batchVerifyContainer').classList.add('hidden');
+    }
+
+    async function startBatchUpload() {
+        if (!pendingBatchFiles.length || !currentArsipId) return;
+
+        const filesArr = [...pendingBatchFiles];
         const total = filesArr.length;
         
         const progressContainer = document.getElementById('batchProgressContainer');
         const progressStatus = document.getElementById('batchProgressStatus');
         const progressPercent = document.getElementById('batchProgressPercent');
         const progressBar = document.getElementById('batchProgressBar');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
+        document.getElementById('batchVerifyContainer').classList.add('hidden');
         progressContainer.classList.remove('hidden');
         progressBar.style.width = '0%';
         progressPercent.innerText = '0%';
@@ -641,18 +767,16 @@
 
         let successCount = 0;
         let failCount = 0;
-        let lastError = null;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        let lastError = '';
 
-        for (let i = 0; i < total; i++) {
+        for (let i = 0; i < filesArr.length; i++) {
             const file = filesArr[i];
-            progressStatus.innerText = `Mengunggah file (${i + 1}/${total}): ${file.name}...`;
-
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('_token', csrfToken);
 
             try {
+                progressStatus.innerText = `Mengunggah ${i + 1}/${total}: ${file.name}`;
+
                 const res = await fetch(`/arsips/${currentArsipId}/upload-file`, {
                     method: 'POST',
                     headers: {
@@ -662,42 +786,46 @@
                     body: formData
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.success && data.file) {
-                        successCount++;
-                    }
-                } else {
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok || data.success === false) {
                     failCount++;
-                    const errData = await res.json().catch(() => null);
-                    lastError = errData?.error || errData?.message || `Error ${res.status}`;
-                    console.error('Upload error:', lastError);
+                    lastError = data.message || data.error || (data.errors ? Object.values(data.errors).flat().join(' ') : '') || `Gagal upload ${file.name}`;
+                } else {
+                    successCount++;
                 }
             } catch (err) {
                 failCount++;
-                console.error('Error upload:', err);
-                lastError = err.message;
+                lastError = err.message || `Gagal upload ${file.name}`;
+                console.error('Error upload file:', err);
             }
 
-            const pct = Math.round(((i + 1) / total) * 100);
-            progressBar.style.width = pct + '%';
-            progressPercent.innerText = pct + '%';
+            const percent = Math.round(((i + 1) / total) * 100);
+            progressBar.style.width = `${percent}%`;
+            progressPercent.innerText = `${percent}%`;
         }
+
+        pendingBatchFiles = [];
+        document.getElementById('modalBatchFileInput').value = '';
 
         if (successCount > 0) {
             progressStatus.innerText = `✅ Berhasil mengunggah ${successCount} dari ${total} file! Menyegarkan...`;
-            if (failCount > 0) showToast('warning', `${failCount} file gagal diunggah. ${lastError || ''}`);
+            if (failCount > 0 && typeof showToast === 'function') {
+                showToast('warning', `${failCount} file gagal diunggah. ${lastError || ''}`);
+            }
             setTimeout(() => {
                 window.location.reload();
             }, 800);
         } else {
-            progressStatus.innerText = `❌ Gagal mengunggah. ${lastError || 'Silakan coba lagi.'}`;
-            showToast('error', `Gagal mengunggah file. ALASAN: ${lastError || 'Koneksi terputus'}`, 7000);
+            progressStatus.innerText = `❌ Semua file gagal diunggah. ${lastError || ''}`;
+            if (typeof showToast === 'function') {
+                showToast('error', lastError || 'Upload gagal.');
+            }
         }
     }
 
     async function deleteSingleFileModal(fileId, btnEl) {
-        if (!await showConfirm('Yakin ingin menghapus lampiran ini?')) return;
+        if (!confirm('Hapus file ini?')) return;
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
@@ -720,6 +848,9 @@
     }
 
     function closeFilesModal() {
+        pendingBatchFiles = [];
+        document.getElementById('modalBatchFileInput').value = '';
+        document.getElementById('batchVerifyContainer').classList.add('hidden');
         document.getElementById('filesModal').classList.add('hidden');
     }
     </script>
@@ -731,7 +862,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="exportModalOpen" x-transition.scale class="inline-block align-bottom bg-surface rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle border border-outline-variant w-full max-w-[620px] mx-auto" style="max-width: 620px;">
                 <form method="GET" action="{{ route('laporan.export') }}" @@submit="exportModalOpen = false">
-                    @if(request('unit_id')) <input type="hidden" name="unit_id" value="{{ request('unit_id') }}"> @endif
+                    @if(isset($currentUnit)) <input type="hidden" name="unit_id" value="{{ $currentUnit->id }}"> @endif
                     @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                     @if(request('kondisi')) <input type="hidden" name="kondisi" value="{{ request('kondisi') }}"> @endif
                     @if(request('klasifikasi_keamanan')) <input type="hidden" name="klasifikasi_keamanan" value="{{ request('klasifikasi_keamanan') }}"> @endif

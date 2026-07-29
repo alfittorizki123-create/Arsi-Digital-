@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ArsipController;
 use App\Http\Controllers\ArsipImportController;
 use App\Http\Controllers\Auth\AuthController;
@@ -23,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/arsips/pilih-unit', [ArsipController::class, 'pilihUnitUpload'])->name('arsips.pilih_unit');
+    Route::post('/arsips/pilih-unit', [ArsipController::class, 'pilihUnit'])->name('arsips.pilih_unit.store');
     Route::get('/arsips/import', [ArsipImportController::class, 'create'])->name('arsips.import');
     Route::post('/arsips/import/preview', [ArsipImportController::class, 'preview'])->name('arsips.import.preview');
     Route::post('/arsips/import/preview-ajax', [ArsipImportController::class, 'previewAjax'])->name('arsips.import.preview_ajax');
@@ -33,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('arsips', ArsipController::class);
     Route::post('/arsips/upload-temp-file', [ArsipController::class, 'uploadTempFile'])->name('arsips.upload_temp_file');
     Route::post('/arsips/{arsip}/upload-file', [ArsipController::class, 'uploadSingleFile'])->name('arsips.upload_file');
+    Route::get('/arsip-files/{arsipFile}/preview', [ArsipController::class, 'previewFile'])->name('arsip-files.preview');
     Route::delete('/arsip-files/{arsipFile}', [ArsipController::class, 'destroyFile'])->name('arsip-files.destroy');
 
     Route::post('/raks/{rak}/assign-boks', [RakController::class, 'assignBoks'])->name('raks.assign_boks');
@@ -44,6 +47,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
     Route::get('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
+
+    Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
 
     Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
     Route::get('/peminjaman/arsips/search', [PeminjamanController::class, 'searchArsip'])->name('peminjaman.search_arsip');

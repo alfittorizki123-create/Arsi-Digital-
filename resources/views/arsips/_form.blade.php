@@ -182,13 +182,13 @@
         
         {{-- Area Drag & Drop Realtime Upload --}}
         <div class="p-5 border-2 border-dashed border-primary/40 rounded-xl bg-surface-container-lowest hover:bg-primary-fixed-dim/10 transition-colors text-center cursor-pointer relative">
-            <input type="file" id="form_multi_files" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+            <input type="file" id="form_multi_files" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx"
                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                    onchange="startFormBatchUpload(this)">
             <div class="flex flex-col items-center justify-center gap-2 pointer-events-none">
                 <span class="material-symbols-outlined text-4xl text-primary">cloud_upload</span>
                 <p class="text-body-md font-bold text-on-surface">Klik atau Drag & Drop puluhan/ratusan PDF & Foto ke sini</p>
-                <p class="text-xs text-on-surface-variant">File akan langsung diunggah di latar belakang satu per satu (tanpa batasan ukuran/jumlah). Format: PDF, JPG, PNG, WEBP, DOCX, XLSX.</p>
+                <p class="text-xs text-on-surface-variant">Di HP: tahan/centang beberapa foto/file di galeri/file manager, lalu klik Pilih. Format: PDF, JPG, PNG, WEBP, HEIC/HEIF, DOCX, XLSX.</p>
             </div>
         </div>
 
@@ -267,6 +267,8 @@ async function startFormBatchUpload(input) {
     progressStatus.innerText = `Memulai mengunggah ${total} file...`;
 
     let successCount = 0;
+    let failCount = 0;
+    let lastError = '';
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
     const targetUrl = currentArsipEditId 
@@ -291,8 +293,9 @@ async function startFormBatchUpload(input) {
                 body: formData
             });
 
+            const data = await res.json().catch(() => ({}));
+
             if (res.ok) {
-                const data = await res.json();
                 if (data.success && data.file) {
                     successCount++;
                     uploadedCount++;
@@ -328,9 +331,17 @@ async function startFormBatchUpload(input) {
                         </button>
                     `;
                     previewContainer.appendChild(card);
+                } else {
+                    failCount++;
+                    lastError = data.message || data.error || (data.errors ? Object.values(data.errors).flat().join(' ') : '') || `Gagal upload ${file.name}`;
                 }
+            } else {
+                failCount++;
+                lastError = data.message || data.error || (data.errors ? Object.values(data.errors).flat().join(' ') : '') || `Gagal upload ${file.name}`;
             }
         } catch (err) {
+            failCount++;
+            lastError = err.message || `Gagal upload ${file.name}`;
             console.error('Error upload file:', err);
         }
 
@@ -339,7 +350,13 @@ async function startFormBatchUpload(input) {
         progressPercent.innerText = pct + '%';
     }
 
-    progressStatus.innerText = `✅ Berhasil mengunggah ${successCount} dari ${total} file!`;
+    progressStatus.innerText = failCount > 0
+        ? `⚠️ Berhasil ${successCount} dari ${total} file. Gagal ${failCount}. ${lastError || ''}`
+        : `✅ Berhasil mengunggah ${successCount} dari ${total} file!`;
+
+    if (failCount > 0 && typeof showToast === 'function') {
+        showToast('warning', `${failCount} file gagal diunggah. ${lastError || ''}`);
+    }
     setTimeout(() => {
         progressContainer.classList.add('hidden');
     }, 1500);

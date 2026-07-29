@@ -17,9 +17,9 @@ class GroqService
     }
 
     /**
-     * Cocokkan nama sheet dan teks header Excel ke unit UPT terdaftar memakai AI Groq.
+     * Analisa full header text + sample data Excel untuk mendeteksi unit UPT.
      */
-    public function matchUnitWithAI(string $sheetName, string $headerText, array $unitList): ?array
+    public function matchUnitWithAI(string $sheetName, string $fullHeaderText, array $sampleRows, array $unitList): ?array
     {
         if (empty($this->apiKey)) {
             return null;
@@ -32,23 +32,34 @@ class GroqService
             }
             $unitsString = implode("\n", $unitsFormatted);
 
+            $sampleText = '';
+            foreach ($sampleRows as $i => $row) {
+                $sampleText .= ($i + 1) . '. ' . implode(' | ', array_map(fn($v) => trim((string)($v ?? ''))), array_slice($row, 0, 10)) . "\n";
+            }
+
             $prompt = <<<PROMPT
-Kamu adalah asisten pengenal unit organisasi Bapenda Provinsi Riau.
-Tugasmu adalah mencocokkan Nama Sheet Excel atau Teks Header Surat Excel ke salah satu Unit UPT yang terdaftar.
+Kamu adalah asisten pengenal unit organisasi Bapenda Provinsi Riau. Tugasmu membaca teks header dokumen Excel dan menentukan dari UPT/Unit mana dokumen ini berasal.
 
 DAFTAR UNIT TERDAFTAR:
 {$unitsString}
 
-INPUT UNTUK DIANALISIS:
-- Nama Sheet: "{$sheetName}"
-- Teks Header Baris (Unit Kerja/Organisasi): "{$headerText}"
+NAMA SHEET/TAB EXCEL: "{$sheetName}"
 
-INSTRUKSI PENTING:
-1. Teks Header Baris (Unit Kerja) adalah nama instansi RESMI di dalam dokumen. Jika Teks Header berbeda dengan Nama Sheet, PRIORITASKAN Teks Header resmi (Unit Kerja).
-2. Jika Teks Header (Unit Kerja) menyebutkan unit kerja yang BELUM TERDAFTAR di list (misal: "KARTAMA"), kembalikan matched_unit_id = null agar sistem dapat menyarankan pembuatan unit baru.
-3. Pilih SATU unit dari daftar terdaftar HANYA jika benar-benar cocok.
-Jawab HANYA dalam format JSON valid tanpa penjelasan tambahan:
-{"matched_unit_id": <ID_NUMERIC_OR_NULL>, "confidence": "high|medium|low|none", "reason": "<alasan_singkat>"}
+TEKS HEADER (10 BARIS PERTAMA DOKUMEN):
+{$fullHeaderText}
+
+SAMPLE DATA BARIS (ISI TABEL):
+{$sampleText}
+
+INSTRUKSI:
+1. Baca SEMUA teks header di atas — cari nama unit/UPT/UP/Samsat di dalamnya.
+2. Unit mungkin muncul dalam berbagai format: "UPT PEKANBARU KOTA", "UNIT PELAKSANA TEKNIS PANAM", "UP PELALAWAN", dll.
+3. Cocokkan unit yang kamu temukan dengan daftar unit terdaftar di atas.
+4. HANYA kembalikan matched_unit_id jika benar-benar yakin cocok. Jika tidak yakin, kembalikan null.
+5. Jangan mencocokkan berdasarkan spekulasi — harus ada bukti dari teks header.
+
+Jawab HANYA dalam format JSON valid:
+{"matched_unit_id": <ID_NUMERIC_ATAU_NULL>, "confidence": "high|medium|low|none", "reason": "<alasan_singkat>"}
 PROMPT;
 
             $response = Http::timeout(30)

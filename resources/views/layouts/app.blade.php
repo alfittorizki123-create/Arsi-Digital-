@@ -88,6 +88,7 @@
             @php
                 $settingItems = [
                     ['route' => 'laporan', 'icon' => 'analytics', 'label' => 'Laporan', 'match' => ['laporan*']],
+                    ['route' => 'logs.index', 'icon' => 'manage_history', 'label' => 'Log Aktivitas', 'match' => ['logs*']],
                     ['route' => 'pengaturan', 'icon' => 'settings', 'label' => 'Pengaturan', 'match' => ['pengaturan*']],
                 ];
             @endphp

@@ -19,7 +19,7 @@
         </a>
         <a href="{{ route('pengaturan', ['tab' => 'unit']) }}"
            class="px-4 py-2 text-label-md font-label-md rounded-t border-b-2 transition-colors {{ $tab === 'unit' ? 'border-primary text-primary bg-primary-fixed/30' : 'border-transparent text-on-surface-variant hover:text-primary' }}">
-            Unit / UPT
+            UP/UPT
         </a>
         <a href="{{ route('pengaturan', ['tab' => 'sistem']) }}"
            class="px-4 py-2 text-label-md font-label-md rounded-t border-b-2 transition-colors {{ $tab === 'sistem' ? 'border-primary text-primary bg-primary-fixed/30' : 'border-transparent text-on-surface-variant hover:text-primary' }}">
@@ -136,19 +136,19 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-stack-lg" x-data="{ searchUnit: '', editUnitModal: false, activeUnit: null }">
             <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-lg shadow-sm h-fit">
                 <h3 class="text-headline-sm font-bold text-on-surface mb-stack-md">
-                    Tambah Unit/UPT
+                    Tambah UP/UPT
                 </h3>
                 <form method="POST" action="{{ route('unit.store') }}">
                     @csrf
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-label-md text-on-surface-variant mb-1">Nama Unit <span class="text-error">*</span></label>
+                            <label class="block text-label-md text-on-surface-variant mb-1">Nama UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="nama_unit" value="{{ old('nama_unit') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('nama_unit') border-error @else border-outline-variant @enderror" required>
                             @error('nama_unit') <p class="text-sm text-error mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label class="block text-label-md text-on-surface-variant mb-1">Kode Unit <span class="text-error">*</span></label>
+                            <label class="block text-label-md text-on-surface-variant mb-1">Kode UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="kode_unit" value="{{ old('kode_unit') }}"
                                    class="w-full px-3 py-2 border rounded bg-surface focus:border-primary @error('kode_unit') border-error @else border-outline-variant @enderror"
                                    placeholder="Contoh: UPT-051" required>
@@ -165,11 +165,11 @@
             </div>
 
             <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm flex flex-col">
-                {{-- Search Box di Atas Tabel Nama Unit --}}
+                {{-- Search Box di Atas Tabel Nama UP/UPT --}}
                 <div class="p-3 border-b border-outline-variant bg-surface flex items-center gap-2">
                     <div class="relative w-full">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 text-base">search</span>
-                        <input type="text" x-model="searchUnit" placeholder="Cari nama unit atau kode unit (misal: Pekanbaru, UPT-036)..."
+                        <input type="text" x-model="searchUnit" placeholder="Cari nama UP/UPT atau kode UP/UPT (misal: Pekanbaru, UPT-036)..."
                                class="w-full pl-9 pr-8 py-2 border border-outline-variant rounded-lg bg-surface text-xs focus:outline-none focus:border-primary text-on-surface">
                         <button type="button" x-show="searchUnit.length > 0" @@click="searchUnit = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
                             <span class="material-symbols-outlined text-sm">close</span>
@@ -182,7 +182,7 @@
                         <thead class="bg-surface border-b border-outline-variant sticky top-0">
                             <tr>
                                 <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Kode</th>
-                                <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nama Unit</th>
+                                <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Nama UP/UPT</th>
                                 <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant">Dipakai</th>
                                 <th class="py-3 px-4 font-table-header text-table-header text-on-surface-variant text-right">Aksi</th>
                             </tr>
@@ -208,27 +208,27 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="py-10 text-center text-on-surface-variant">Belum ada unit.</td></tr>
+                                <tr><td colspan="4" class="py-10 text-center text-on-surface-variant">Belum ada UP/UPT.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {{-- MODAL EDIT UNIT --}}
+            {{-- MODAL EDIT UP/UPT --}}
             <div x-show="editUnitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4" x-cloak>
                 <div class="bg-surface rounded-xl border border-outline-variant shadow-lg max-w-md w-full p-stack-lg" @@click.outside="editUnitModal = false">
-                    <h3 class="font-display-md text-title-md mb-4 text-on-surface">Edit Unit / UPT</h3>
+                    <h3 class="font-display-md text-title-md mb-4 text-on-surface">Edit UP/UPT</h3>
                     <form x-bind:action="'{{ url('pengaturan/unit') }}/' + (activeUnit ? activeUnit.id : '')" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="mb-4">
-                            <label class="block text-label-md font-bold mb-1">Nama Unit <span class="text-error">*</span></label>
+                            <label class="block text-label-md font-bold mb-1">Nama UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="nama_unit" x-bind:value="activeUnit ? activeUnit.nama_unit : ''" required
                                    class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
                         </div>
                         <div class="mb-6">
-                            <label class="block text-label-md font-bold mb-1">Kode Unit <span class="text-error">*</span></label>
+                            <label class="block text-label-md font-bold mb-1">Kode UP/UPT <span class="text-error">*</span></label>
                             <input type="text" name="kode_unit" x-bind:value="activeUnit ? activeUnit.kode_unit : ''" required
                                    class="w-full px-3 py-2 border rounded bg-surface focus:outline-none focus:border-primary">
                         </div>
@@ -271,7 +271,7 @@
                         <dd class="font-medium text-on-surface">{{ $jenisPajaks->count() }}</dd>
                     </div>
                     <div class="flex justify-between border-b border-outline-variant pb-2">
-                        <dt class="text-on-surface-variant">Total Unit/UPT</dt>
+                        <dt class="text-on-surface-variant">Total UP/UPT</dt>
                         <dd class="font-medium text-on-surface">{{ $units->count() }}</dd>
                     </div>
                     <div class="flex justify-between">

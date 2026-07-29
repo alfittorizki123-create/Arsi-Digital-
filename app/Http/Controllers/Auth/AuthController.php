@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -37,6 +38,10 @@ class AuthController extends Controller
             $request->session()->regenerate();
             RateLimiter::clear($throttleKey);
 
+            ActivityLogger::log('login', 'Auth', 'Login berhasil', [
+                'username' => $request->input('username'),
+            ], $request);
+
             return redirect()->intended(route('dashboard'));
         }
 
@@ -49,6 +54,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        ActivityLogger::log('logout', 'Auth', 'Logout dari aplikasi', [], $request);
+
         Auth::logout();
 
         $request->session()->invalidate();

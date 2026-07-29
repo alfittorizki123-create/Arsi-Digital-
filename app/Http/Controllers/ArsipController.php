@@ -98,20 +98,33 @@ class ArsipController extends Controller
         return view('arsips.pilih_unit', compact('units'));
     }
 
+    public function pilihUnit(Request $request)
+    {
+        $validated = $request->validate([
+            'unit_id' => ['required', 'exists:units,id'],
+        ]);
+
+        session(['last_unit_id' => $validated['unit_id']]);
+
+        return redirect()->route('arsips.index');
+    }
+
     public function index(Request $request)
     {
-        // 1. Simpan unit aktif ke session jika user memilih unit
         if ($request->filled('unit_id')) {
             session(['last_unit_id' => $request->unit_id]);
+
+            $queryParams = $request->query();
+            unset($queryParams['unit_id']);
+
+            return redirect()->route('arsips.index', $queryParams);
         }
 
-        // 2. Jika tidak ada unit_id di URL dan tidak ada filter aktif, otomatis gunakan unit terakhir dari session
-        if (!$request->filled('unit_id') && !$request->filled('search') && !$request->filled('jenis_pajak_id') && !$request->filled('kurun_waktu') && !$request->filled('bulan') && !$request->filled('tipe_arsip') && !$request->filled('status') && !$request->filled('kondisi') && !$request->filled('klasifikasi_keamanan')) {
-            if (session()->has('last_unit_id') && Unit::where('id', session('last_unit_id'))->exists()) {
-                return redirect()->route('arsips.index', ['unit_id' => session('last_unit_id')]);
-            }
+        if (!session()->has('last_unit_id') || !Unit::where('id', session('last_unit_id'))->exists()) {
             return redirect()->route('arsips.pilih_unit');
         }
+
+        $activeUnitId = session('last_unit_id');
 
         $query = Arsip::with(['jenisPajaks', 'unit', 'boks.rak', 'files'])->oldest();
 
@@ -146,11 +159,8 @@ class ArsipController extends Controller
                 $q->where('jenis_pajaks.id', $jpId);
             });
         }
-        $currentUnit = null;
-        if ($request->filled('unit_id')) {
-            $query->where('unit_id', $request->unit_id);
-            $currentUnit = Unit::find($request->unit_id);
-        }
+        $currentUnit = Unit::find($activeUnitId);
+        $query->where('unit_id', $activeUnitId);
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -242,11 +252,11 @@ class ArsipController extends Controller
             $this->storeArsipFile($arsip, $request->file('file_arsip'));
         }
 
-        $redirectUrl = !empty($arsip->unit_id)
-            ? route('arsips.index', ['unit_id' => $arsip->unit_id])
-            : route('arsips.index');
+        if (!empty($arsip->unit_id)) {
+            session(['last_unit_id' => $arsip->unit_id]);
+        }
 
-        return redirect($redirectUrl)
+        return redirect()->route('arsips.index')
             ->with('success', 'Data arsip berhasil ditambahkan.');
     }
 
@@ -303,12 +313,11 @@ class ArsipController extends Controller
             $this->storeArsipFile($arsip, $request->file('file_arsip'));
         }
 
-        $unitId = $arsip->unit_id;
-        $redirectUrl = !empty($unitId)
-            ? route('arsips.index', ['unit_id' => $unitId])
-            : route('arsips.index');
+        if (!empty($arsip->unit_id)) {
+            session(['last_unit_id' => $arsip->unit_id]);
+        }
 
-        return redirect($redirectUrl)
+        return redirect()->route('arsips.index')
             ->with('success', 'Data arsip berhasil diperbarui.');
     }
 
@@ -327,8 +336,12 @@ class ArsipController extends Controller
 
         $arsip->delete();
 
+        if (!empty($unitId)) {
+            session(['last_unit_id' => $unitId]);
+        }
+
         return redirect()
-            ->route('arsips.index', $unitId ? ['unit_id' => $unitId] : [])
+            ->route('arsips.index')
             ->with('success', 'Data arsip berhasil dihapus.');
     }
 
@@ -344,6 +357,40 @@ class ArsipController extends Controller
         return back()->with('success', 'File lampiran berhasil dihapus.');
     }
 
+    public function previewFile(\App\Models\ArsipFile $arsipFile)
+    {
+        $disk = Storage::disk('public');
+
+        if (!$disk->exists($arsipFile->path_file)) {
+            abort(404);
+        }
+
+        $absolutePath = $disk->path($arsipFile->path_file);
+        $extension = strtolower(pathinfo($arsipFile->nama_file ?: $arsipFile->path_file, PATHINFO_EXTENSION));
+
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+        ];
+
+        $mime = $mimeMap[$extension]
+            ?? $arsipFile->tipe_file
+            ?? $disk->mimeType($arsipFile->path_file)
+            ?? 'application/octet-stream';
+
+        $safeFilename = str_replace(['"', "\r", "\n"], '', $arsipFile->nama_file ?: basename($arsipFile->path_file));
+
+        return response()->file($absolutePath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $safeFilename . '"',
+            'Cache-Control' => 'public, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function uploadSingleFile(Request $request, Arsip $arsip)
     {
         $request->validate([
@@ -352,7 +399,7 @@ class ArsipController extends Controller
 
         $file = $request->file('file');
         $ext = strtolower($file->getClientOriginalExtension());
-        $allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
+        $allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
 
         if (!in_array($ext, $allowedExts)) {
             return response()->json(['error' => 'Ekstensi file tidak didukung: .' . $ext], 422);
@@ -385,7 +432,7 @@ class ArsipController extends Controller
 
         $file = $request->file('file');
         $ext = strtolower($file->getClientOriginalExtension());
-        $allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
+        $allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
 
         if (!in_array($ext, $allowedExts)) {
             return response()->json(['error' => 'Ekstensi file tidak didukung: .' . $ext], 422);

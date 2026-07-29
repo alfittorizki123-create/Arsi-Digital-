@@ -56,7 +56,7 @@ class Arsip extends Model
 
     public function peminjamen()
     {
-        return $this->hasMany(Peminjaman::class, 'arsip_id');
+        return $this->belongsToMany(Peminjaman::class, 'peminjaman_arsip', 'arsip_id', 'peminjaman_id')->withTimestamps();
     }
 
     public function getFileUrlAttribute(): ?string
