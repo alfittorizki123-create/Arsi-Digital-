@@ -366,7 +366,7 @@ async function startFormBatchUpload(input) {
 }
 
 async function deleteSavedFile(fileId) {
-    if (!await showConfirm('Yakin ingin menghapus file lampiran ini?')) return;
+    if (!await showConfirm('Apakah Anda yakin ingin menghapus file lampiran ini?')) return;
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 

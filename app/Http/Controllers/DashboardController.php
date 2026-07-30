@@ -11,7 +11,6 @@ class DashboardController extends Controller
     {
         $stats = [
             'total_arsip' => Arsip::count(),
-            'total_berkas' => (int) Arsip::sum('jumlah'),
             'arsip_aktif' => Arsip::where('status', 'aktif')->count(),
             'arsip_inaktif' => Arsip::where('status', 'inaktif')->count(),
             'total_unit' => Unit::count(),

@@ -71,7 +71,7 @@
                                         class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm" title="Edit Rak">
                                     <span class="material-symbols-outlined text-xs">edit</span> Edit
                                 </button>
-                                <form action="{{ route('raks.destroy', $rak->id) }}" method="POST" data-confirm="Hapus Rak {{ $rak->nomor_rak }}? Boks di dalamnya akan dikeluarkan dari rak ini.">
+                                <form action="{{ route('raks.destroy', $rak->id) }}" method="POST" data-confirm="Apakah Anda yakin ingin menghapus Rak {{ $rak->nomor_rak }}? Boks di dalamnya akan dikeluarkan dari rak ini.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus Rak">

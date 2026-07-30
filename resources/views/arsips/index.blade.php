@@ -356,7 +356,7 @@
                                                     <span class="material-symbols-outlined text-xs">edit</span>
                                                     <span>Edit</span>
                                                 </a>
-                                                <form action="{{ route('arsips.destroy', $arsip) }}" method="POST" class="inline" data-confirm="Hapus berkas ini?">
+                                                <form action="{{ route('arsips.destroy', $arsip) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus data arsip ini?">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus Berkas">
@@ -825,7 +825,7 @@
     }
 
     async function deleteSingleFileModal(fileId, btnEl) {
-        if (!confirm('Hapus file ini?')) return;
+        if (!confirm('Apakah Anda yakin ingin menghapus file ini?')) return;
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 

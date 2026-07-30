@@ -120,8 +120,8 @@ class ArsipImportController extends Controller
                 'BAGAN BATU' => 'UPT Bagan Batu',
                 'KUANTAN SINGINGI' => 'UPT Taluk Kuantan',
                 'TELUK KUANTAN' => 'UPT Taluk Kuantan',
-                'UP PENGELOLAAN PENDAPATAN PEKANBARU' => 'UPT Pku Kota',
-                'UP PENGELOLAAN PENDAPATAN PEKANBARU KOTA' => 'UPT Pku Kota',
+                'UP PENGELOLAAN PENDAPATAN PEKANBARU' => 'UPT Pekanbaru Kota',
+                'UP PENGELOLAAN PENDAPATAN PEKANBARU KOTA' => 'UPT Pekanbaru Kota',
                 'UP PENGELOLAAN PENDAPATAN PEKANBARU SELATAN' => 'UPT Simpang Tiga',
             ];
 

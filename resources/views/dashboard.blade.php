@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-5 gap-stack-md mb-stack-lg">
+    <div class="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-stack-md mb-stack-lg">
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
                 <p class="text-label-md text-on-surface-variant">Total Arsip</p>
@@ -32,13 +32,7 @@
             </div>
             <p class="text-display-md text-on-surface mt-2">{{ number_format($stats['arsip_inaktif']) }}</p>
         </div>
-        <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
-            <div class="flex items-center justify-between">
-                <p class="text-label-md text-on-surface-variant">Total Berkas</p>
-                <span class="material-symbols-outlined text-primary">layers</span>
-            </div>
-            <p class="text-display-md text-primary mt-2">{{ number_format($stats['total_berkas']) }}</p>
-        </div>
+
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-md shadow-sm">
             <div class="flex items-center justify-between">
                 <p class="text-label-md text-on-surface-variant">Total Unit</p>

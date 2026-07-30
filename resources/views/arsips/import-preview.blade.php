@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-visible">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-surface border-b border-outline-variant">
                     <tr>

@@ -26,6 +26,10 @@ class RakController extends Controller
             ->orderBy('nomor_boks', 'asc')
             ->get();
 
+        // Pre-compute range_berkas untuk semua boks dalam 1 batch query
+        $allBoks = $raks->getCollection()->flatMap->boks->merge($unassignedBoks);
+        Boks::preloadRangeBerkas($allBoks);
+
         return view('raks.index', compact('raks', 'unassignedBoks'));
     }
 
