@@ -44,10 +44,18 @@ class Boks extends Model
         if (empty($matches[0])) return null;
 
         $nomorBoksInt = (int) $matches[0];
-        return static::firstOrCreate(
-            ['nomor_boks' => $nomorBoksInt, 'tahun' => (int) $tahun],
-            ['unit_id' => $unitId]
-        );
+        $attributes = ['nomor_boks' => $nomorBoksInt, 'tahun' => (int) $tahun];
+        if ($unitId) {
+            $attributes['unit_id'] = $unitId;
+        }
+
+        $boks = static::firstOrCreate($attributes);
+
+        if ($unitId && !$boks->unit_id) {
+            $boks->update(['unit_id' => $unitId]);
+        }
+
+        return $boks;
     }
 
     /**

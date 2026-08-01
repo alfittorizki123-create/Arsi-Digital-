@@ -81,12 +81,16 @@ class ArsipController extends Controller
                 }
             }
 
-            if ($matched) {
-                $unit->sort_order = $matched['order'];
-                $unit->boks_display = $matched['boks'];
+            $unit->sort_order = $matched ? $matched['order'] : 999;
+
+            $dbBoksNums = $unit->arsips->pluck('nomor_boks')->map(function($b) {
+                return preg_replace('/^boks\s*/i', '', trim($b));
+            })->filter(fn($v) => $v !== '')->unique()->sort(SORT_NATURAL)->values();
+
+            if ($dbBoksNums->isNotEmpty()) {
+                $unit->boks_display = 'Boks ' . $dbBoksNums->implode(', ');
             } else {
-                $unit->sort_order = 999;
-                $unit->boks_display = null;
+                $unit->boks_display = $matched['boks'] ?? null;
             }
         });
 
@@ -197,12 +201,18 @@ class ArsipController extends Controller
         return view('arsips.index', compact('arsips', 'groupedArsips', 'jenisPajaks', 'units', 'tahuns', 'currentUnit'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $selectedUnitId = $request->query('unit_id') ?? session('last_unit_id');
+
+        if (!$selectedUnitId || !Unit::where('id', $selectedUnitId)->exists()) {
+            return redirect()->route('arsips.pilih_unit');
+        }
+
         $jenisPajaks = JenisPajak::orderBy('nama_jenis_pajak')->get();
         $units = Unit::orderBy('nama_unit')->get();
 
-        return view('arsips.create', compact('jenisPajaks', 'units'));
+        return view('arsips.create', compact('jenisPajaks', 'units', 'selectedUnitId'));
     }
 
     public function store(StoreArsipRequest $request)

@@ -8,16 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('arsip_jenis_pajak', function (Blueprint $table) {
+        Schema::create('units', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('arsip_id')->constrained('arsips')->onDelete('cascade');
-            $table->foreignId('jenis_pajak_id')->constrained('jenis_pajaks')->onDelete('cascade');
+            $table->string('nama_unit');
+            $table->string('nomor_rak')->nullable();
+            $table->string('kode_unit')->unique();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('arsip_jenis_pajak');
+        Schema::dropIfExists('units');
     }
 };

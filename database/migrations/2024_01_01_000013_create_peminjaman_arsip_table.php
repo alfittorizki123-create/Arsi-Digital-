@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::create('peminjaman_arsip', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('peminjaman_id')->constrained('peminjamen')->cascadeOnDelete();
-            $table->foreignId('arsip_id')->constrained('arsips')->cascadeOnDelete();
+            $table->foreignId('peminjaman_id')->constrained('peminjamen')->onDelete('cascade');
+            $table->foreignId('arsip_id')->constrained('arsips')->onDelete('cascade');
             $table->timestamps();
+
             $table->unique(['peminjaman_id', 'arsip_id']);
         });
     }

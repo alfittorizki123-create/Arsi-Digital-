@@ -116,7 +116,7 @@
     <div>
         <label for="unit_id" class="block text-label-md font-label-md text-on-surface-variant mb-1">Unit/UPT/UP</label>
         @php 
-            $presetUnitId = old('unit_id', $arsip->unit_id ?? request('unit_id'));
+            $presetUnitId = old('unit_id', $arsip->unit_id ?? ($selectedUnitId ?? (request('unit_id') ?? session('last_unit_id'))));
         @endphp
         @if ($presetUnitId)
             <input type="hidden" name="unit_id" value="{{ $presetUnitId }}">

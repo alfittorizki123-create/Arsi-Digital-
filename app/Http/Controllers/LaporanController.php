@@ -18,7 +18,7 @@ class LaporanController extends Controller
 
         $query = Arsip::with(['jenisPajaks', 'unit'])->latest();
         $this->applyFilters($query, $filters);
-        $arsips = $query->paginate(20)->withQueryString();
+        $arsips = $query->paginate(7)->withQueryString();
 
         $rekapUnit = DB::table('arsips')
             ->join('units', 'arsips.unit_id', '=', 'units.id')
@@ -91,8 +91,8 @@ class LaporanController extends Controller
         $this->applyFilters($unitIdsQuery, $filters);
         $activeUnitIds = $unitIdsQuery->distinct()->pluck('unit_id');
 
-        $rekapArsipUnits = Unit::whereIn('id', $activeUnitIds)->orderBy('nama_unit')->get()->map(function($unit) use ($filters) {
-            $query = Arsip::where('unit_id', $unit->id);
+        $rekapArsipUnitsAll = Unit::whereIn('id', $activeUnitIds)->orderBy('nama_unit')->get()->map(function($unit) use ($filters) {
+            $query = Arsip::with('boks.rak')->where('unit_id', $unit->id);
             $this->applyFilters($query, $filters);
             $items = $query->get();
 
@@ -151,6 +151,22 @@ class LaporanController extends Controller
                 'lokasi_rak' => $rakStr,
             ];
         });
+
+        $perPage = 7;
+        $page = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage('rekap_page');
+        $currentPageItems = $rekapArsipUnitsAll->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $rekapArsipUnits = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentPageItems,
+            $rekapArsipUnitsAll->count(),
+            $perPage,
+            $page,
+            [
+                'path' => \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPath(),
+                'pageName' => 'rekap_page',
+            ]
+        );
+        $rekapArsipUnits->withQueryString();
 
         return view('laporan.index', compact(
             'arsips',

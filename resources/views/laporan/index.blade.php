@@ -195,7 +195,7 @@
                 Rekapitulasi Pemindahan Arsip Per Unit (Format Rekap Excel Bapenda)
             </h3>
             <div class="flex items-center gap-3">
-                <span class="text-xs text-on-surface-variant font-medium">Total: {{ $rekapArsipUnits->count() }} Unit Terdaftar</span>
+                <span class="text-xs text-on-surface-variant font-medium">Total: {{ $rekapArsipUnits->total() }} Unit Terdaftar</span>
                 <a href="{{ route('laporan.export', request()->query()) }}"
                    style="background-color: #059669; color: #ffffff;"
                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs hover:opacity-90 transition-all shadow-md">
@@ -219,7 +219,7 @@
                 <tbody class="divide-y divide-outline-variant text-xs">
                     @forelse ($rekapArsipUnits as $index => $r)
                         <tr class="hover:bg-surface-container/50 transition-colors">
-                            <td class="py-3 px-4 text-center font-bold text-on-surface-variant">{{ $index + 1 }}</td>
+                            <td class="py-3 px-4 text-center font-bold text-on-surface-variant">{{ ($rekapArsipUnits->currentPage() - 1) * $rekapArsipUnits->perPage() + $index + 1 }}</td>
                             <td class="py-3 px-4 font-semibold text-on-surface">
                                 {{ $r->unit->nama_unit }}
                                 @if($r->rincian_boks)
@@ -239,6 +239,11 @@
                 </tbody>
             </table>
         </div>
+        @if ($rekapArsipUnits->hasPages())
+            <div class="bg-surface px-4 py-3 border-t border-outline-variant">
+                {{ $rekapArsipUnits->links() }}
+            </div>
+        @endif
     </div>
 
     <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">

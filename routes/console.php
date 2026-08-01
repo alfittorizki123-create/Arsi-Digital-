@@ -1,19 +1,28 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 /*
 |--------------------------------------------------------------------------
-| Console Routes
+| Console Routes (Laravel 12 Style)
 |--------------------------------------------------------------------------
 |
-| This file is where you may define all of your Closure based console
-| commands. Each Closure is bound to a command instance allowing a
-| simple approach to interacting with each command's IO methods.
+| Tempat mendaftarkan perintah console Closure dan jadwal tugas.
+| Command class seperti CleanTempFiles otomatis ter-discover.
 |
 */
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Jadwal pembersihan file temporary setiap hari jam 02:00 pagi
+Schedule::command('arsip:clean-temp-files')->daily()->at('02:00');
+
+Artisan::command('fix:boks-units', function () {
+    $count = 0;
+    foreach (\App\Models\Boks::whereNull('unit_id')->get() as $boks) {
+        $arsipUnitId = $boks->arsips()->whereNotNull('unit_id')->value('unit_id');
+        if ($arsipUnitId) {
+            $boks->update(['unit_id' => $arsipUnitId]);
+            $count++;
+        }
+    }
+    $this->info("Berhasil memperbaiki {$count} boks unit_id.");
+});
