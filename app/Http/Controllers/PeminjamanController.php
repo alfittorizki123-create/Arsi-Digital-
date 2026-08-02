@@ -123,7 +123,7 @@ class PeminjamanController extends Controller
             $query->where('status', $request->status);
         }
 
-        $peminjamen = $query->paginate(20)->withQueryString();
+        $peminjamen = $query->paginate(7)->withQueryString();
         $units = Unit::orderBy('nama_unit')->get();
 
         return view('peminjaman.index', compact('peminjamen', 'units'));

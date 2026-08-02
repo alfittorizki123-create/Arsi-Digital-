@@ -482,9 +482,9 @@
                                     <span>Daftar Berkas Dipinjam (<span x-text="detailData.arsips ? detailData.arsips.length : 0"></span> Berkas)</span>
                                 </h4>
                             </div>
-                            <div class="border border-outline-variant rounded-xl overflow-hidden max-h-56 overflow-y-auto shadow-sm">
+                            <div class="border border-outline-variant rounded-xl overflow-hidden shadow-sm">
                                 <table class="w-full text-left border-collapse text-xs">
-                                    <thead class="bg-surface-container/60 border-b border-outline-variant sticky top-0">
+                                    <thead class="bg-surface-container/60 border-b border-outline-variant">
                                         <tr>
                                             <th class="py-2.5 px-3 font-bold text-on-surface-variant text-center">NO</th>
                                             <th class="py-2.5 px-3 font-bold text-on-surface-variant">KODE</th>
@@ -495,9 +495,9 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-outline-variant/40 bg-surface-container-lowest">
-                                        <template x-for="(item, idx) in detailData.arsips" :key="item.id">
+                                        <template x-for="(item, idx) in paginatedDetailArsips()" :key="item.id">
                                             <tr class="hover:bg-surface-container/20 transition-colors">
-                                                <td class="py-2.5 px-3 text-on-surface-variant text-center font-medium" x-text="idx + 1"></td>
+                                                <td class="py-2.5 px-3 text-on-surface-variant text-center font-medium" x-text="((detailPage - 1) * detailPerPage) + idx + 1"></td>
                                                 <td class="py-2.5 px-3 font-mono font-bold text-primary whitespace-nowrap" x-text="item.kode"></td>
                                                 <td class="py-2.5 px-3 text-on-surface font-medium" x-text="item.uraian"></td>
                                                 <td class="py-2.5 px-3 text-on-surface-variant whitespace-nowrap" x-text="item.unit"></td>
@@ -507,6 +507,34 @@
                                         </template>
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {{-- Paginasi Modal Detail (Batas 5 per Halaman) --}}
+                            <div x-show="totalDetailPages() > 1" class="flex flex-col sm:flex-row items-center justify-between gap-2 mt-3 px-1 text-xs">
+                                <span class="text-on-surface-variant">
+                                    Menampilkan <span class="font-semibold text-on-surface" x-text="((detailPage - 1) * detailPerPage) + 1"></span> -
+                                    <span class="font-semibold text-on-surface" x-text="Math.min(detailPage * detailPerPage, detailData.arsips ? detailData.arsips.length : 0)"></span> dari
+                                    <span class="font-bold text-on-surface" x-text="detailData.arsips ? detailData.arsips.length : 0"></span> berkas
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="if (detailPage > 1) detailPage--"
+                                            :disabled="detailPage === 1"
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                        &laquo; Prev
+                                    </button>
+                                    <template x-for="p in totalDetailPages()" :key="p">
+                                        <button type="button" @click="detailPage = p"
+                                                :class="detailPage === p ? 'bg-primary text-on-primary font-bold shadow-sm' : 'bg-surface text-on-surface hover:bg-surface-container border border-outline-variant'"
+                                                class="w-7 h-7 rounded-lg text-xs flex items-center justify-center transition-colors">
+                                            <span x-text="p"></span>
+                                        </button>
+                                    </template>
+                                    <button type="button" @click="if (detailPage < totalDetailPages()) detailPage++"
+                                            :disabled="detailPage === totalDetailPages()"
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                        Next &raquo;
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -545,7 +573,20 @@ document.addEventListener('alpine:init', () => {
         detailModal: false,
         detailData: null,
         loadingDetail: false,
+        detailPage: 1,
+        detailPerPage: 5,
         editId: null,
+
+        paginatedDetailArsips() {
+            if (!this.detailData || !this.detailData.arsips) return [];
+            const start = (this.detailPage - 1) * this.detailPerPage;
+            return this.detailData.arsips.slice(start, start + this.detailPerPage);
+        },
+
+        totalDetailPages() {
+            if (!this.detailData || !this.detailData.arsips) return 1;
+            return Math.ceil(this.detailData.arsips.length / this.detailPerPage) || 1;
+        },
 
         // Create form
         createUnitId: '',
@@ -568,6 +609,7 @@ document.addEventListener('alpine:init', () => {
             this.detailModal = true;
             this.loadingDetail = true;
             this.detailData = null;
+            this.detailPage = 1;
 
             fetch(`/peminjaman/${id}/json`)
                 .then(r => r.json())
