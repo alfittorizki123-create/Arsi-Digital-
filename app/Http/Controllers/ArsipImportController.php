@@ -786,7 +786,7 @@ class ArsipImportController extends Controller
 
         $rowText = strtolower(implode(' ', array_filter(array_map('strval', $data), 'is_string')));
         $skipWords = [
-            'pekanbaru', 'yang memindahkan', 'yang menerima', 'sekretaris', 'selaku', 'nip.', 'nip ', 
+            'yang memindahkan', 'yang menerima', 'sekretaris', 'selaku', 'nip.', 'nip ', 
             'kepala', 'penata', 'pembina', 'jumlah', '.....', '---', 'mengetahui',
             'pakar', 'selaku kepala', 'selaku ketua', 'hamdanil', 'ruslan'
         ];
@@ -795,6 +795,11 @@ class ArsipImportController extends Controller
             if (str_contains($rowText, $word)) {
                 return true;
             }
+        }
+
+        // Skip signature date line e.g. "Pekanbaru, 17 Desember 2024"
+        if (preg_match('/[a-z\s]+,\s*\d{1,2}\s+[a-z]+\s+\d{4}/i', $rowText)) {
+            return true;
         }
 
         // Must contain valid report keywords or bulan or "surat" or "laporan"
