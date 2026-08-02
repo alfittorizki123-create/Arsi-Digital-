@@ -386,51 +386,51 @@
 
     {{-- MODAL DETAIL PEMINJAMAN --}}
     <div x-show="detailModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
             <div x-show="detailModal" x-transition.opacity class="fixed inset-0 bg-black/50 transition-opacity" @click="detailModal = false"></div>
-            <div x-show="detailModal" x-transition.scale class="relative bg-surface rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-outline-variant max-h-[90vh] overflow-y-auto flex flex-col">
-                <div class="flex items-center justify-between border-b border-outline-variant pb-4 mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-primary-fixed/30 text-primary flex items-center justify-center shrink-0 border border-primary/20">
-                            <span class="material-symbols-outlined text-xl">description</span>
+            <div x-show="detailModal" x-transition.scale class="relative bg-surface rounded-2xl shadow-xl max-w-3xl w-full p-4 sm:p-5 border border-outline-variant flex flex-col">
+                <div class="flex items-center justify-between border-b border-outline-variant pb-2.5 mb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-primary-fixed/30 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                            <span class="material-symbols-outlined text-lg">description</span>
                         </div>
                         <div>
-                            <h3 class="text-title-lg font-bold text-on-surface">Detail Peminjaman Arsip</h3>
-                            <p class="text-xs text-on-surface-variant">Rincian informasi peminjaman dan daftar berkas yang dipinjam</p>
+                            <h3 class="text-base font-bold text-on-surface leading-tight">Detail Peminjaman Arsip</h3>
+                            <p class="text-[11px] text-on-surface-variant">Rincian informasi peminjaman dan daftar berkas yang dipinjam</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <template x-if="detailData">
-                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase"
                                   :class="detailData.status_badge"
                                   x-text="detailData.status_label"></span>
                         </template>
                         <button @click="detailModal = false" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg">
-                            <span class="material-symbols-outlined">close</span>
+                            <span class="material-symbols-outlined text-lg">close</span>
                         </button>
                     </div>
                 </div>
 
                 <template x-if="loadingDetail">
-                    <div class="py-12 text-center text-on-surface-variant">
-                        <span class="material-symbols-outlined text-4xl animate-spin text-primary mb-2">progress_activity</span>
-                        <p class="text-sm font-medium">Memuat detail peminjaman...</p>
+                    <div class="py-8 text-center text-on-surface-variant">
+                        <span class="material-symbols-outlined text-3xl animate-spin text-primary mb-1">progress_activity</span>
+                        <p class="text-xs font-medium">Memuat detail peminjaman...</p>
                     </div>
                 </template>
 
                 <template x-if="!loadingDetail && detailData">
-                    <div class="space-y-5">
+                    <div class="space-y-3">
                         {{-- Ringkasan Peminjam & Tanggal --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-surface-container/40 border border-outline-variant/60">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl bg-surface-container/40 border border-outline-variant/60">
                             <div>
-                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-base">person</span>
+                                <h4 class="text-[11px] font-bold text-primary uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">person</span>
                                     <span>Identitas Peminjam</span>
                                 </h4>
-                                <div class="space-y-2 text-xs">
+                                <div class="space-y-1 text-[11px]">
                                     <div class="flex justify-between items-center">
                                         <span class="text-on-surface-variant">Nama Peminjam:</span>
-                                        <span class="font-bold text-on-surface text-sm" x-text="detailData.nama_peminjam"></span>
+                                        <span class="font-bold text-on-surface" x-text="detailData.nama_peminjam"></span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-on-surface-variant">Instansi / Unit:</span>
@@ -440,18 +440,18 @@
                                         <span class="text-on-surface-variant">No. Telp / Kontak:</span>
                                         <span class="font-mono text-on-surface" x-text="detailData.telp || '-'"></span>
                                     </div>
-                                    <div class="pt-2 border-t border-outline-variant/30">
-                                        <span class="text-on-surface-variant block mb-1 font-semibold">Keperluan:</span>
-                                        <p class="text-on-surface bg-surface p-2.5 rounded-lg border border-outline-variant/40 text-xs leading-relaxed" x-text="detailData.keperluan || 'Tidak dicantumkan'"></p>
+                                    <div class="pt-1 border-t border-outline-variant/30">
+                                        <span class="text-on-surface-variant block font-semibold">Keperluan:</span>
+                                        <p class="text-on-surface bg-surface px-2 py-1 rounded border border-outline-variant/40 text-[11px] truncate" x-text="detailData.keperluan || 'Tidak dicantumkan'"></p>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-base">calendar_clock</span>
+                                <h4 class="text-[11px] font-bold text-primary uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">calendar_clock</span>
                                     <span>Jadwal & Status</span>
                                 </h4>
-                                <div class="space-y-2 text-xs">
+                                <div class="space-y-1 text-[11px]">
                                     <div class="flex justify-between items-center">
                                         <span class="text-on-surface-variant">Tanggal Pinjam:</span>
                                         <span class="font-mono font-bold text-on-surface" x-text="detailData.tanggal_pinjam || '-'"></span>
@@ -465,9 +465,9 @@
                                         <span class="font-mono font-bold text-success" x-text="detailData.tanggal_dikembalikan || '-'"></span>
                                     </div>
                                     <template x-if="detailData.keterangan">
-                                        <div class="pt-2 border-t border-outline-variant/30">
-                                            <span class="text-on-surface-variant block mb-1 font-semibold">Catatan / Keterangan:</span>
-                                            <p class="text-on-surface bg-surface p-2.5 rounded-lg border border-outline-variant/40 text-xs leading-relaxed" x-text="detailData.keterangan"></p>
+                                        <div class="pt-1 border-t border-outline-variant/30">
+                                            <span class="text-on-surface-variant block font-semibold">Catatan:</span>
+                                            <p class="text-on-surface bg-surface px-2 py-1 rounded border border-outline-variant/40 text-[11px] truncate" x-text="detailData.keterangan"></p>
                                         </div>
                                     </template>
                                 </div>
@@ -476,41 +476,41 @@
 
                         {{-- Tabel Daftar Arsip Dipinjam --}}
                         <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                                    <span class="material-symbols-outlined text-base">folder_open</span>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <h4 class="text-[11px] font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">folder_open</span>
                                     <span>Daftar Berkas Dipinjam (<span x-text="detailData.arsips ? detailData.arsips.length : 0"></span> Berkas)</span>
                                 </h4>
                             </div>
                             <div class="border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-                                <table class="w-full text-left border-collapse text-xs">
+                                <table class="w-full text-left border-collapse text-[11px]">
                                     <thead class="bg-surface-container/60 border-b border-outline-variant">
                                         <tr>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant text-center">NO</th>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">KODE</th>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">URAIAN INFORMASI ARSIP</th>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">KANTOR UNIT/UPT</th>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">BOKS</th>
-                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant text-center">KURUN</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant text-center">NO</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">KODE</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">URAIAN INFORMASI ARSIP</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">KANTOR UNIT/UPT</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">BOKS</th>
+                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant text-center">KURUN</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-outline-variant/40 bg-surface-container-lowest">
                                         <template x-for="(item, idx) in paginatedDetailArsips()" :key="item.id">
                                             <tr class="hover:bg-surface-container/20 transition-colors">
-                                                <td class="py-2.5 px-3 text-on-surface-variant text-center font-medium" x-text="((detailPage - 1) * detailPerPage) + idx + 1"></td>
-                                                <td class="py-2.5 px-3 font-mono font-bold text-primary whitespace-nowrap" x-text="item.kode"></td>
-                                                <td class="py-2.5 px-3 text-on-surface font-medium" x-text="item.uraian"></td>
-                                                <td class="py-2.5 px-3 text-on-surface-variant whitespace-nowrap" x-text="item.unit"></td>
-                                                <td class="py-2.5 px-3 font-bold text-primary whitespace-nowrap" x-text="item.boks"></td>
-                                                <td class="py-2.5 px-3 font-mono text-on-surface-variant text-center whitespace-nowrap" x-text="item.kurun"></td>
+                                                <td class="py-1.5 px-2.5 text-on-surface-variant text-center font-medium" x-text="((detailPage - 1) * detailPerPage) + idx + 1"></td>
+                                                <td class="py-1.5 px-2.5 font-mono font-bold text-primary whitespace-nowrap" x-text="item.kode"></td>
+                                                <td class="py-1.5 px-2.5 text-on-surface font-medium line-clamp-1" x-text="item.uraian"></td>
+                                                <td class="py-1.5 px-2.5 text-on-surface-variant whitespace-nowrap" x-text="item.unit"></td>
+                                                <td class="py-1.5 px-2.5 font-bold text-primary whitespace-nowrap" x-text="item.boks"></td>
+                                                <td class="py-1.5 px-2.5 font-mono text-on-surface-variant text-center whitespace-nowrap" x-text="item.kurun"></td>
                                             </tr>
                                         </template>
                                     </tbody>
                                 </table>
                             </div>
 
-                            {{-- Paginasi Modal Detail (Batas 5 per Halaman) --}}
-                            <div x-show="totalDetailPages() > 1" class="flex flex-col sm:flex-row items-center justify-between gap-2 mt-3 px-1 text-xs">
+                            {{-- Paginasi Modal Detail (Batas 4 per Halaman) --}}
+                            <div x-show="totalDetailPages() > 1" class="flex items-center justify-between gap-2 mt-2 px-1 text-[11px]">
                                 <span class="text-on-surface-variant">
                                     Menampilkan <span class="font-semibold text-on-surface" x-text="((detailPage - 1) * detailPerPage) + 1"></span> -
                                     <span class="font-semibold text-on-surface" x-text="Math.min(detailPage * detailPerPage, detailData.arsips ? detailData.arsips.length : 0)"></span> dari
@@ -519,19 +519,19 @@
                                 <div class="flex items-center gap-1">
                                     <button type="button" @click="if (detailPage > 1) detailPage--"
                                             :disabled="detailPage === 1"
-                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                            class="px-2 py-0.5 rounded border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px] transition-colors">
                                         &laquo; Prev
                                     </button>
                                     <template x-for="p in totalDetailPages()" :key="p">
                                         <button type="button" @click="detailPage = p"
                                                 :class="detailPage === p ? 'bg-primary text-on-primary font-bold shadow-sm' : 'bg-surface text-on-surface hover:bg-surface-container border border-outline-variant'"
-                                                class="w-7 h-7 rounded-lg text-xs flex items-center justify-center transition-colors">
+                                                class="w-6 h-6 rounded text-[10px] flex items-center justify-center transition-colors">
                                             <span x-text="p"></span>
                                         </button>
                                     </template>
                                     <button type="button" @click="if (detailPage < totalDetailPages()) detailPage++"
                                             :disabled="detailPage === totalDetailPages()"
-                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                            class="px-2 py-0.5 rounded border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px] transition-colors">
                                         Next &raquo;
                                     </button>
                                 </div>
@@ -540,21 +540,21 @@
                     </div>
                 </template>
 
-                <div class="mt-6 pt-3 border-t border-outline-variant flex justify-between items-center">
-                    <button type="button" @click="detailModal = false" class="px-4 py-2 text-xs font-bold border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+                <div class="mt-3 pt-2.5 border-t border-outline-variant flex justify-between items-center">
+                    <button type="button" @click="detailModal = false" class="px-3 py-1.5 text-xs font-bold border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
                         Tutup
                     </button>
                     <div class="flex items-center gap-2" x-show="detailData">
                         <template x-if="detailData && detailData.status === 'dipinjam'">
                             <form :action="'/peminjaman/' + detailData.id + '/kembalikan'" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?">
                                 @csrf
-                                <button type="submit" class="px-4 py-2 text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim rounded-lg shadow-sm flex items-center gap-1 transition-colors">
+                                <button type="submit" class="px-3 py-1.5 text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim rounded-lg shadow-sm flex items-center gap-1 transition-colors">
                                     <span class="material-symbols-outlined text-xs">assignment_return</span>
                                     <span>Tandai Dikembalikan</span>
                                 </button>
                             </form>
                         </template>
-                        <button type="button" @click="detailModal = false; openEditModal(detailData.id)" class="px-4 py-2 text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 rounded-lg shadow-sm flex items-center gap-1 transition-colors">
+                        <button type="button" @click="detailModal = false; openEditModal(detailData.id)" class="px-3 py-1.5 text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 rounded-lg shadow-sm flex items-center gap-1 transition-colors">
                             <span class="material-symbols-outlined text-xs">edit</span>
                             <span>Edit Peminjaman</span>
                         </button>
@@ -574,7 +574,7 @@ document.addEventListener('alpine:init', () => {
         detailData: null,
         loadingDetail: false,
         detailPage: 1,
-        detailPerPage: 5,
+        detailPerPage: 4,
         editId: null,
 
         paginatedDetailArsips() {
