@@ -109,19 +109,19 @@
                                     </span>
                                 </td>
                                 <td class="py-3 px-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                    <div class="flex items-center justify-end gap-2 whitespace-nowrap">
                                         <button @click="openDetailModal({{ $p->id }})"
-                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
+                                                class="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
                                                 title="Lihat Detail Peminjaman">
-                                            <span class="material-symbols-outlined text-xs">visibility</span>
+                                            <span class="material-symbols-outlined text-sm">visibility</span>
                                             <span>Detail</span>
                                         </button>
 
                                         @if ($p->status === 'dipinjam')
-                                            <form action="{{ route('peminjaman.kembalikan', $p) }}" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?">
+                                            <form action="{{ route('peminjaman.kembalikan', $p) }}" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?" class="inline">
                                                 @csrf
-                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim transition-colors shadow-sm" title="Kembalikan Arsip">
-                                                    <span class="material-symbols-outlined text-xs">assignment_return</span>
+                                                <button type="submit" class="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim transition-colors shadow-sm" title="Kembalikan Arsip">
+                                                    <span class="material-symbols-outlined text-sm">assignment_return</span>
                                                     <span>Kembalikan</span>
                                                 </button>
                                             </form>
