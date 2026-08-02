@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Exclude logout dari proteksi CSRF agar logout selalu berhasil walau sesi sudah kadaluarsa
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+        ]);
+
         // Middleware kustom: Pencatatan aktivitas pengguna
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\LogUserActivity::class,
@@ -23,6 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo('/dashboard');
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Konfigurasi exception handling
+        // Tangani jika sesi/token CSRF kadaluarsa (Error 419) agar otomatis redirect ke halaman Login tanpa layar error 419
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->is('logout') || $request->routeIs('logout')) {
+                \Illuminate\Support\Facades\Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->route('login');
+            }
+            return redirect()->route('login')->with('info', 'Sesi Anda telah berakhir, silakan login kembali.');
+        });
     })
     ->create();
