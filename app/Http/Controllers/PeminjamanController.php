@@ -12,21 +12,33 @@ class PeminjamanController extends Controller
 {
     public function json(Peminjaman $peminjaman)
     {
-        $peminjaman->load('arsips.unit');
+        $peminjaman->load(['arsips.unit', 'arsips.boks']);
         $arsipsData = $peminjaman->arsips->map(fn($a) => [
             'id' => $a->id,
+            'kode' => $a->kode_klasifikasi ?? '-',
+            'uraian' => $a->uraian_informasi_arsip ?? '-',
+            'unit' => $a->unit?->nama_unit ?? '-',
+            'boks' => $a->boks ? "Boks {$a->boks->nomor_boks}" : '-',
+            'kurun' => $a->kurun_waktu ?? '-',
             'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian') . ' [' . ($a->unit?->nama_unit ?? '-') . ']',
         ]);
 
         return response()->json([
+            'id' => $peminjaman->id,
             'arsip_ids' => $arsipsData->pluck('id'),
             'arsips' => $arsipsData,
             'nama_peminjam' => $peminjaman->nama_peminjam,
             'instansi' => $peminjaman->instansi,
             'telp' => $peminjaman->telp,
             'keperluan' => $peminjaman->keperluan,
-            'tanggal_pinjam' => $peminjaman->tanggal_pinjam->format('Y-m-d'),
-            'tanggal_kembali_rencana' => $peminjaman->tanggal_kembali_rencana?->format('Y-m-d'),
+            'tanggal_pinjam' => $peminjaman->tanggal_pinjam?->format('d/m/Y'),
+            'tanggal_pinjam_raw' => $peminjaman->tanggal_pinjam?->format('Y-m-d'),
+            'tanggal_kembali_rencana' => $peminjaman->tanggal_kembali_rencana?->format('d/m/Y'),
+            'tanggal_kembali_rencana_raw' => $peminjaman->tanggal_kembali_rencana?->format('Y-m-d'),
+            'tanggal_dikembalikan' => $peminjaman->tanggal_dikembalikan?->format('d/m/Y H:i'),
+            'status' => $peminjaman->status,
+            'status_label' => $peminjaman->status_label,
+            'status_badge' => $peminjaman->status_badge,
             'keterangan' => $peminjaman->keterangan,
         ]);
     }

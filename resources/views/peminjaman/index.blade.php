@@ -67,21 +67,37 @@
                     </thead>
                     <tbody class="divide-y divide-outline-variant/60">
                         @foreach ($peminjamen as $idx => $p)
+                            @php
+                                $firstArsip = $p->arsips->first();
+                                $totalArsip = $p->arsips->count();
+                            @endphp
                             <tr class="hover:bg-surface-container/30 transition-colors">
                                 <td class="py-3 px-4 text-body-sm text-on-surface-variant text-center font-medium">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-4 text-body-sm text-on-surface max-w-xs">
-                                    @foreach ($p->arsips as $arsip)
-                                        <div class="flex items-center gap-1.5 {{ !$loop->first ? 'mt-1 pt-1 border-t border-outline-variant/30' : '' }}">
-                                            <span class="material-symbols-outlined text-xs text-primary shrink-0">description</span>
-                                            <div class="min-w-0">
-                                                <span class="font-bold text-primary text-xs">{{ $arsip->kode_klasifikasi ?? '-' }}</span>
-                                                <span class="text-xs text-on-surface-variant block leading-tight line-clamp-1">{{ $arsip->uraian_informasi_arsip ?? '-' }}</span>
-                                                @if($arsip->unit)
-                                                    <span class="text-[10px] text-primary/70">{{ $arsip->unit->nama_unit }}</span>
-                                                @endif
+                                <td class="py-3 px-4 text-body-sm text-on-surface max-w-sm">
+                                    @if($firstArsip)
+                                        <div class="flex items-center gap-2 cursor-pointer group" @click="openDetailModal({{ $p->id }})">
+                                            <span class="material-symbols-outlined text-base text-primary shrink-0 group-hover:scale-110 transition-transform">description</span>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    <span class="font-bold text-primary text-xs">{{ $firstArsip->kode_klasifikasi ?? '-' }}</span>
+                                                    @if($firstArsip->unit)
+                                                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-on-surface font-semibold">{{ $firstArsip->unit->nama_unit }}</span>
+                                                    @endif
+                                                </div>
+                                                <span class="text-xs text-on-surface-variant block leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                                                    {{ $firstArsip->uraian_informasi_arsip ?? '-' }}
+                                                </span>
                                             </div>
+                                            @if($totalArsip > 1)
+                                                <span class="px-2 py-0.5 rounded-full bg-primary-fixed/30 text-primary font-bold text-[11px] shrink-0 border border-primary/20 hover:bg-primary-fixed/50 transition-colors"
+                                                      title="Klik untuk lihat {{ $totalArsip }} arsip">
+                                                    +{{ $totalArsip - 1 }} arsip
+                                                </span>
+                                            @endif
                                         </div>
-                                    @endforeach
+                                    @else
+                                        <span class="text-xs text-outline italic">Tidak ada arsip</span>
+                                    @endif
                                 </td>
                                 <td class="py-3 px-4 text-body-sm text-on-surface font-medium whitespace-nowrap">{{ $p->nama_peminjam }}</td>
                                 <td class="py-3 px-4 text-body-sm text-on-surface-variant whitespace-nowrap font-mono">{{ $p->tanggal_pinjam->format('d/m/Y') }}</td>
@@ -92,32 +108,38 @@
                                         {{ $p->status_label }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4">
-                                    <div class="flex flex-col gap-1.5">
+                                <td class="py-3 px-4 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                                        <button @click="openDetailModal({{ $p->id }})"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
+                                                title="Lihat Detail Peminjaman">
+                                            <span class="material-symbols-outlined text-xs">visibility</span>
+                                            <span>Detail</span>
+                                        </button>
+
                                         @if ($p->status === 'dipinjam')
                                             <form action="{{ route('peminjaman.kembalikan', $p) }}" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?">
                                                 @csrf
-                                                <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim transition-colors shadow-sm">
+                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim transition-colors shadow-sm" title="Kembalikan Arsip">
                                                     <span class="material-symbols-outlined text-xs">assignment_return</span>
                                                     <span>Kembalikan</span>
                                                 </button>
                                             </form>
                                         @endif
-                                        <div class="flex flex-col gap-1.5">
-                                            <button @click="openEditModal({{ $p->id }})"
-                                                    class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm">
-                                                <span class="material-symbols-outlined text-xs">edit</span>
-                                                <span>Edit</span>
+
+                                        <button @click="openEditModal({{ $p->id }})"
+                                                class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm"
+                                                title="Edit Peminjaman">
+                                            <span class="material-symbols-outlined text-xs">edit</span>
+                                        </button>
+
+                                        <form action="{{ route('peminjaman.destroy', $p) }}" method="POST" data-confirm="Apakah Anda yakin ingin menghapus data peminjaman ini?">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus Peminjaman">
+                                                <span class="material-symbols-outlined text-xs">delete</span>
                                             </button>
-                                            <form action="{{ route('peminjaman.destroy', $p) }}" method="POST" data-confirm="Apakah Anda yakin ingin menghapus data peminjaman ini?">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm">
-                                                    <span class="material-symbols-outlined text-xs">delete</span>
-                                                    <span>Hapus</span>
-                                                </button>
-                                            </form>
-                                        </div>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -375,6 +397,158 @@
             </div>
         </div>
     </div>
+
+    {{-- MODAL DETAIL PEMINJAMAN --}}
+    <div x-show="detailModal" class="fixed inset-0 z-50 overflow-y-auto" x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-show="detailModal" x-transition.opacity class="fixed inset-0 bg-black/50 transition-opacity" @click="detailModal = false"></div>
+            <div x-show="detailModal" x-transition.scale class="relative bg-surface rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-outline-variant max-h-[90vh] overflow-y-auto flex flex-col">
+                <div class="flex items-center justify-between border-b border-outline-variant pb-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary-fixed/30 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                            <span class="material-symbols-outlined text-xl">description</span>
+                        </div>
+                        <div>
+                            <h3 class="text-title-lg font-bold text-on-surface">Detail Peminjaman Arsip</h3>
+                            <p class="text-xs text-on-surface-variant">Rincian informasi peminjaman dan daftar berkas yang dipinjam</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <template x-if="detailData">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                                  :class="detailData.status_badge"
+                                  x-text="detailData.status_label"></span>
+                        </template>
+                        <button @click="detailModal = false" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <template x-if="loadingDetail">
+                    <div class="py-12 text-center text-on-surface-variant">
+                        <span class="material-symbols-outlined text-4xl animate-spin text-primary mb-2">progress_activity</span>
+                        <p class="text-sm font-medium">Memuat detail peminjaman...</p>
+                    </div>
+                </template>
+
+                <template x-if="!loadingDetail && detailData">
+                    <div class="space-y-5">
+                        {{-- Ringkasan Peminjam & Tanggal --}}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-surface-container/40 border border-outline-variant/60">
+                            <div>
+                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-base">person</span>
+                                    <span>Identitas Peminjam</span>
+                                </h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">Nama Peminjam:</span>
+                                        <span class="font-bold text-on-surface text-sm" x-text="detailData.nama_peminjam"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">Instansi / Unit:</span>
+                                        <span class="font-medium text-on-surface" x-text="detailData.instansi || '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">No. Telp / Kontak:</span>
+                                        <span class="font-mono text-on-surface" x-text="detailData.telp || '-'"></span>
+                                    </div>
+                                    <div class="pt-2 border-t border-outline-variant/30">
+                                        <span class="text-on-surface-variant block mb-1 font-semibold">Keperluan:</span>
+                                        <p class="text-on-surface bg-surface p-2.5 rounded-lg border border-outline-variant/40 text-xs leading-relaxed" x-text="detailData.keperluan || 'Tidak dicantumkan'"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider mb-2.5 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-base">calendar_clock</span>
+                                    <span>Jadwal & Status</span>
+                                </h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">Tanggal Pinjam:</span>
+                                        <span class="font-mono font-bold text-on-surface" x-text="detailData.tanggal_pinjam || '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">Rencana Kembali:</span>
+                                        <span class="font-mono font-bold text-warning" x-text="detailData.tanggal_kembali_rencana || '-'"></span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-on-surface-variant">Dikembalikan Pada:</span>
+                                        <span class="font-mono font-bold text-success" x-text="detailData.tanggal_dikembalikan || '-'"></span>
+                                    </div>
+                                    <template x-if="detailData.keterangan">
+                                        <div class="pt-2 border-t border-outline-variant/30">
+                                            <span class="text-on-surface-variant block mb-1 font-semibold">Catatan / Keterangan:</span>
+                                            <p class="text-on-surface bg-surface p-2.5 rounded-lg border border-outline-variant/40 text-xs leading-relaxed" x-text="detailData.keterangan"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Tabel Daftar Arsip Dipinjam --}}
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-base">folder_open</span>
+                                    <span>Daftar Berkas Dipinjam (<span x-text="detailData.arsips ? detailData.arsips.length : 0"></span> Berkas)</span>
+                                </h4>
+                            </div>
+                            <div class="border border-outline-variant rounded-xl overflow-hidden max-h-56 overflow-y-auto shadow-sm">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead class="bg-surface-container/60 border-b border-outline-variant sticky top-0">
+                                        <tr>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant text-center">NO</th>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">KODE</th>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">URAIAN INFORMASI ARSIP</th>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">KANTOR UNIT/UPT</th>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant">BOKS</th>
+                                            <th class="py-2.5 px-3 font-bold text-on-surface-variant text-center">KURUN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-outline-variant/40 bg-surface-container-lowest">
+                                        <template x-for="(item, idx) in detailData.arsips" :key="item.id">
+                                            <tr class="hover:bg-surface-container/20 transition-colors">
+                                                <td class="py-2.5 px-3 text-on-surface-variant text-center font-medium" x-text="idx + 1"></td>
+                                                <td class="py-2.5 px-3 font-mono font-bold text-primary whitespace-nowrap" x-text="item.kode"></td>
+                                                <td class="py-2.5 px-3 text-on-surface font-medium" x-text="item.uraian"></td>
+                                                <td class="py-2.5 px-3 text-on-surface-variant whitespace-nowrap" x-text="item.unit"></td>
+                                                <td class="py-2.5 px-3 font-bold text-primary whitespace-nowrap" x-text="item.boks"></td>
+                                                <td class="py-2.5 px-3 font-mono text-on-surface-variant text-center whitespace-nowrap" x-text="item.kurun"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="mt-6 pt-3 border-t border-outline-variant flex justify-between items-center">
+                    <button type="button" @click="detailModal = false" class="px-4 py-2 text-xs font-bold border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+                        Tutup
+                    </button>
+                    <div class="flex items-center gap-2" x-show="detailData">
+                        <template x-if="detailData && detailData.status === 'dipinjam'">
+                            <form :action="'/peminjaman/' + detailData.id + '/kembalikan'" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?">
+                                @csrf
+                                <button type="submit" class="px-4 py-2 text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim rounded-lg shadow-sm flex items-center gap-1 transition-colors">
+                                    <span class="material-symbols-outlined text-xs">assignment_return</span>
+                                    <span>Tandai Dikembalikan</span>
+                                </button>
+                            </form>
+                        </template>
+                        <button type="button" @click="detailModal = false; openEditModal(detailData.id)" class="px-4 py-2 text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 rounded-lg shadow-sm flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-xs">edit</span>
+                            <span>Edit Peminjaman</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -382,6 +556,9 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('peminjamanPage', () => ({
         createModal: false,
         editModal: false,
+        detailModal: false,
+        detailData: null,
+        loadingDetail: false,
         editId: null,
 
         // Create form
@@ -400,6 +577,22 @@ document.addEventListener('alpine:init', () => {
         editTglPinjam: '',
         editTglKembaliRencana: '',
         editKeterangan: '',
+
+        openDetailModal(id) {
+            this.detailModal = true;
+            this.loadingDetail = true;
+            this.detailData = null;
+
+            fetch(`/peminjaman/${id}/json`)
+                .then(r => r.json())
+                .then(data => {
+                    this.detailData = data;
+                    this.loadingDetail = false;
+                })
+                .catch(() => {
+                    this.loadingDetail = false;
+                });
+        },
 
         openCreateModal() {
             this.createModal = true;
