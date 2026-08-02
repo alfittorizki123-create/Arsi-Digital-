@@ -510,28 +510,28 @@
                             </div>
 
                             {{-- Paginasi Modal Detail (Batas 4 per Halaman) --}}
-                            <div x-show="totalDetailPages() > 1" class="flex items-center justify-between gap-2 mt-2 px-1 text-[11px]">
+                            <div x-show="totalDetailPages() > 1" class="flex items-center justify-between gap-2 mt-2 px-1 text-xs">
                                 <span class="text-on-surface-variant">
                                     Menampilkan <span class="font-semibold text-on-surface" x-text="((detailPage - 1) * detailPerPage) + 1"></span> -
                                     <span class="font-semibold text-on-surface" x-text="Math.min(detailPage * detailPerPage, detailData.arsips ? detailData.arsips.length : 0)"></span> dari
                                     <span class="font-bold text-on-surface" x-text="detailData.arsips ? detailData.arsips.length : 0"></span> berkas
                                 </span>
-                                <div class="flex items-center gap-1">
+                                <div class="flex items-center gap-1.5">
                                     <button type="button" @click="if (detailPage > 1) detailPage--"
                                             :disabled="detailPage === 1"
-                                            class="px-2 py-0.5 rounded border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px] transition-colors">
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
                                         &laquo; Prev
                                     </button>
                                     <template x-for="p in totalDetailPages()" :key="p">
                                         <button type="button" @click="detailPage = p"
                                                 :class="detailPage === p ? 'bg-primary text-on-primary font-bold shadow-sm' : 'bg-surface text-on-surface hover:bg-surface-container border border-outline-variant'"
-                                                class="w-6 h-6 rounded text-[10px] flex items-center justify-center transition-colors">
+                                                class="min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold flex items-center justify-center transition-colors">
                                             <span x-text="p"></span>
                                         </button>
                                     </template>
                                     <button type="button" @click="if (detailPage < totalDetailPages()) detailPage++"
                                             :disabled="detailPage === totalDetailPages()"
-                                            class="px-2 py-0.5 rounded border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px] transition-colors">
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
                                         Next &raquo;
                                     </button>
                                 </div>
