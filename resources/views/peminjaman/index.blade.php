@@ -111,7 +111,7 @@
                                 <td class="py-3 px-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-1.5 flex-wrap">
                                         <button @click="openDetailModal({{ $p->id }})"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
                                                 title="Lihat Detail Peminjaman">
                                             <span class="material-symbols-outlined text-xs">visibility</span>
                                             <span>Detail</span>
@@ -126,20 +126,6 @@
                                                 </button>
                                             </form>
                                         @endif
-
-                                        <button @click="openEditModal({{ $p->id }})"
-                                                class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm"
-                                                title="Edit Peminjaman">
-                                            <span class="material-symbols-outlined text-xs">edit</span>
-                                        </button>
-
-                                        <form action="{{ route('peminjaman.destroy', $p) }}" method="POST" data-confirm="Apakah Anda yakin ingin menghapus data peminjaman ini?">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus Peminjaman">
-                                                <span class="material-symbols-outlined text-xs">delete</span>
-                                            </button>
-                                        </form>
                                     </div>
                                 </td>
                             </tr>
