@@ -208,14 +208,12 @@
         </div>
     @else
         <div class="space-y-stack-md" x-data="{ 
-            openGroup: sessionStorage.getItem('active_open_group') || '{{ $groupedArsips->keys()->first() }}',
+            openGroup: null,
             toggleGroup(key) {
                 if (this.openGroup === key) {
                     this.openGroup = null;
-                    sessionStorage.removeItem('active_open_group');
                 } else {
                     this.openGroup = key;
-                    sessionStorage.setItem('active_open_group', key);
                 }
             }
         }">
@@ -356,10 +354,10 @@
                                                     <span class="material-symbols-outlined text-xs">edit</span>
                                                     <span>Edit</span>
                                                 </a>
-                                                <form action="{{ route('arsips.destroy', $arsip) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus data arsip ini?">
+                                                <form action="{{ route('arsips.destroy', $arsip) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin memindahkan data arsip ini ke menu Arsip Terhapus?">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus Berkas">
+                                                    <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Pindahkan ke Arsip Terhapus">
                                                         <span class="material-symbols-outlined text-xs">delete</span>
                                                         <span>Hapus</span>
                                                     </button>
@@ -376,9 +374,6 @@
         </div>
     @endif
 
-    @if ($arsips->hasPages())
-        <div class="mt-stack-md">{{ $arsips->links() }}</div>
-    @endif
 
     @if(isset($currentUnit))
     <div x-show="editUnitModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -653,9 +648,14 @@
                     <span class="material-symbols-outlined text-primary text-xl">description</span>
                     <p class="text-xs font-bold text-on-surface">File Utama Arsip</p>
                 </div>
-                <a href="${legacyUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors">
-                    <span class="material-symbols-outlined text-xs">visibility</span> Buka Dokumen
-                </a>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <a href="${legacyUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined text-xs">visibility</span> Buka Dokumen
+                    </a>
+                    <button type="button" onclick="deleteLegacyFileModal(${currentArsipId}, this)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus File Utama Ini">
+                        <span class="material-symbols-outlined text-xs">delete</span> Hapus
+                    </button>
+                </div>
             `;
             container.appendChild(item);
         } else {
@@ -825,7 +825,8 @@
     }
 
     async function deleteSingleFileModal(fileId, btnEl) {
-        if (!confirm('Apakah Anda yakin ingin menghapus file ini?')) return;
+        const ok = await window.showConfirm('Apakah Anda yakin ingin menghapus file lampiran ini?', 'Hapus File');
+        if (!ok) return;
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
@@ -839,11 +840,37 @@
             });
 
             if (res.ok) {
-                const itemEl = btnEl.closest('.shadow-sm');
+                const itemEl = btnEl.closest('.p-3') || btnEl.closest('.shadow-sm') || btnEl.parentElement.parentElement;
                 if (itemEl) itemEl.remove();
+                if (typeof showToast === 'function') showToast('success', 'File lampiran berhasil dihapus.');
             }
         } catch (err) {
             console.error('Error delete file:', err);
+        }
+    }
+
+    async function deleteLegacyFileModal(arsipId, btnEl) {
+        const ok = await window.showConfirm('Apakah Anda yakin ingin menghapus file utama ini?', 'Hapus File Utama');
+        if (!ok) return;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        try {
+            const res = await fetch(`/arsips/${arsipId}/legacy-file`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            if (res.ok) {
+                const itemEl = btnEl.closest('.p-3') || btnEl.parentElement.parentElement;
+                if (itemEl) itemEl.remove();
+                if (typeof showToast === 'function') showToast('success', 'File utama berhasil dihapus.');
+            }
+        } catch (err) {
+            console.error('Error delete legacy file:', err);
         }
     }
 

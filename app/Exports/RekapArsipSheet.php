@@ -63,10 +63,29 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                 // Row 1: Top Margin Height
                 $sheet->getRowDimension(1)->setRowHeight(15);
 
+                // Dynamic Title Header based on status filter
+                $statusFilter = strtolower($this->filters['status'] ?? '');
+                if ($statusFilter === 'aktif') {
+                    $titleText = 'DAFTAR ARSIP AKTIF YANG DIPINDAHKAN';
+                    $unitKerjaText = ': REKAP ARSIP AKTIF';
+                } elseif ($statusFilter === 'inaktif') {
+                    $titleText = 'DAFTAR ARSIP INAKTIF YANG DIPINDAHKAN';
+                    $unitKerjaText = ': REKAP ARSIP IN AKTIF';
+                } else {
+                    $titleText = 'DAFTAR ARSIP YANG DIPINDAHKAN';
+                    $unitKerjaText = ': REKAP ARSIP';
+                }
+
+                if (!empty($this->filters['kurun_waktu'])) {
+                    $unitKerjaText .= ' ' . $this->filters['kurun_waktu'];
+                } else {
+                    $unitKerjaText .= ' 2023';
+                }
+
                 // Row 2: Title Header (Arial 18pt BOLD)
                 $sheet->getRowDimension(2)->setRowHeight(24);
                 $sheet->mergeCells('A2:K2');
-                $sheet->setCellValue('A2', 'DAFTAR ARSIP INAKTIF YANG DIPINDAHKAN');
+                $sheet->setCellValue('A2', $titleText);
                 $sheet->getStyle('A2')->getFont()->setName('Arial')->setBold(true)->setSize(18);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -83,7 +102,7 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                 $sheet->mergeCells('A5:C5');
                 $sheet->setCellValue('A5', 'UNIT KERJA');
                 $sheet->mergeCells('D5:K5');
-                $sheet->setCellValue('D5', ': REKAP ARSIP IN AKTIF 2023');
+                $sheet->setCellValue('D5', $unitKerjaText);
                 $sheet->getStyle('A5:D5')->getFont()->setName('Arial')->setSize(14);
 
                 $sheet->getRowDimension(6)->setRowHeight(10);
@@ -149,10 +168,9 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                     ->distinct()
                     ->pluck('unit_id');
 
-                $units = Unit::whereIn('id', $unitIds)->orderBy('nama_unit')->get();
+                $units = Unit::whereIn('id', $unitIds)->get();
 
-                $r = 10;
-                $no = 1;
+                $rekapRows = [];
 
                 foreach ($units as $u) {
                     $uItems = Arsip::where('unit_id', $u->id)
@@ -175,10 +193,18 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
 
                     $rincianParts = [];
                     $globalBoksNums = [];
+                    $numericBoksList = [];
                     $localBoksCounter = 1;
 
                     foreach ($boksGroups as $groupKey => $bItems) {
                         $bNum = $bItems->first()->boks ? $bItems->first()->boks->nomor_boks : ($bItems->first()->nomor_boks ?? null);
+
+                        if ($bNum) {
+                            preg_match('/\d+/', $bNum, $m);
+                            if (isset($m[0])) {
+                                $numericBoksList[] = (int)$m[0];
+                            }
+                        }
 
                         $explicitNos = $bItems->pluck('nomor_arsip_berkas')->map(fn($v) => (int)$v)->filter(fn($v) => $v > 0)->sort()->values();
                         if ($explicitNos->isNotEmpty()) {
@@ -201,6 +227,9 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                         }
                     }
 
+                    sort($numericBoksList);
+                    $minBoksNum = !empty($numericBoksList) ? $numericBoksList[0] : 999999;
+
                     $unitLabelWithRincian = $u->nama_unit;
                     if (!empty($rincianParts)) {
                         $unitLabelWithRincian .= " ( " . implode('; ', $rincianParts) . " )";
@@ -209,20 +238,54 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                     $jumlahBerkas = $uItems->count();
                     $kurunWaktuStr = $uItems->pluck('kurun_waktu')->unique()->filter()->implode(', ') ?: '2023';
                     $globalBoksStr = !empty($globalBoksNums) ? implode(',', array_unique($globalBoksNums)) : '-';
+
+                    $rekapRows[] = [
+                        'unit' => $u,
+                        'nama_unit' => $u->nama_unit,
+                        'min_boks_num' => $minBoksNum,
+                        'unitLabelWithRincian' => $unitLabelWithRincian,
+                        'kurunWaktuStr' => $kurunWaktuStr,
+                        'jumlahBerkas' => $jumlahBerkas,
+                        'globalBoksStr' => $globalBoksStr,
+                    ];
+                }
+
+                // Sort rekap rows by min_boks_num ascending (and nama_unit as secondary)
+                $rekapRows = collect($rekapRows)->sortBy([
+                    ['min_boks_num', 'asc'],
+                    ['nama_unit', 'asc'],
+                ])->values();
+
+                $r = 10;
+                $no = 1;
+
+                foreach ($rekapRows as $row) {
                     $kodeKlasifikasi = '900.1.13.1';
                     $kondisiStr = 'Baik';
                     $keamananStr = 'Terbuka';
                     $tingkatPerkembangan = 'Asli\copy';
 
+                    // Generate exact sheet tab name matching ArsipPerUnitSheet::title()
+                    $uObj = $row['unit'];
+                    $sheetTabName = $uObj->kode_unit
+                        ? $uObj->kode_unit . ' - ' . $uObj->nama_unit
+                        : $uObj->nama_unit;
+                    $sheetTabName = str_replace(['\\', '/', '*', '?', ':', '[', ']'], '', $sheetTabName);
+                    $sheetTabName = mb_substr(trim($sheetTabName), 0, 31);
+
                     $sheet->setCellValue("A{$r}", $no++);
                     $sheet->setCellValue("B{$r}", $kodeKlasifikasi);
                     $sheet->setCellValue("C{$r}", '');
-                    $sheet->setCellValue("D{$r}", $unitLabelWithRincian);
-                    $sheet->setCellValue("E{$r}", $kurunWaktuStr);
-                    $sheet->setCellValue("F{$r}", $jumlahBerkas);
+                    $sheet->setCellValue("D{$r}", $row['unitLabelWithRincian']);
+                    
+                    // Internal Sheet Hyperlink
+                    $sheet->getCell("D{$r}")->getHyperlink()->setUrl("sheet://'{$sheetTabName}'!A1");
+
+                    $sheet->setCellValue("E{$r}", $row['kurunWaktuStr']);
+                    $sheet->setCellValue("F{$r}", $row['jumlahBerkas']);
                     $sheet->setCellValue("G{$r}", 'Berkas');
                     $sheet->setCellValue("H{$r}", $tingkatPerkembangan);
-                    $sheet->setCellValue("I{$r}", $globalBoksStr);
+                    $sheet->setCellValue("I{$r}", $row['globalBoksStr']);
                     $sheet->setCellValue("J{$r}", $kondisiStr);
                     $sheet->setCellValue("K{$r}", $keamananStr);
 
@@ -230,6 +293,7 @@ class RekapArsipSheet implements FromCollection, WithEvents, WithTitle
                     $sheet->getStyle("A{$r}:C{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     $sheet->getStyle("E{$r}:K{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     $sheet->getStyle("D{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                    $sheet->getStyle("D{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_BLACK))->setUnderline(false);
 
                     $r++;
                 }

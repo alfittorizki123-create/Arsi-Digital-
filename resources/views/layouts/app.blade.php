@@ -64,22 +64,37 @@
                     ['route' => 'arsips.pilih_unit', 'icon' => 'inventory_2', 'label' => 'Daftar Arsip', 'match' => ['arsips.pilih_unit', 'arsips.index', 'arsips.create', 'arsips.edit', 'arsips.show']],
                     ['route' => 'peminjaman.index', 'icon' => 'book', 'label' => 'Peminjaman', 'match' => ['peminjaman*']],
                     ['route' => 'raks.index', 'icon' => 'shelves', 'label' => 'Kelola Rak', 'match' => ['raks*']],
+                    ['route' => 'laporan', 'icon' => 'analytics', 'label' => 'Laporan', 'match' => ['laporan*']],
                 ];
+            @endphp
+            @php
+                $isFromTrash = request('from') === 'trash' || (isset($arsip) && is_object($arsip) && method_exists($arsip, 'trashed') && $arsip->trashed());
             @endphp
             @foreach ($navItems as $item)
                 @php
                     $isActive = request()->routeIs($item['match']);
+                    if ($item['route'] === 'arsips.pilih_unit' && $isFromTrash) {
+                        $isActive = false;
+                    }
                 @endphp
                 <a href="{{ route($item['route']) }}"
-                   class="relative flex items-center gap-stack-md px-3 py-stack-md transition-all duration-200 whitespace-nowrap overflow-hidden group
+                   class="relative flex items-center justify-between gap-stack-md px-3 py-stack-md transition-all duration-200 whitespace-nowrap overflow-hidden group
                    @if($isActive)
                        bg-gradient-to-r from-primary-container/30 to-transparent border-l-4 border-on-primary text-on-primary font-bold
                    @else
                        text-on-primary/70 dark:text-on-primary-container/70 hover:bg-primary-container/10 dark:hover:bg-primary/10 hover:translate-x-0.5 hover:text-on-primary/90
                    @endif"
                    :title="!sidebarOpen ? '{{ $item['label'] }}' : ''">
-                    <span class="material-symbols-outlined shrink-0 transition-transform duration-200 group-hover:scale-110" @if($isActive) style="font-variation-settings: 'FILL' 1;" @endif>{{ $item['icon'] }}</span>
-                    <span x-show="sidebarOpen" class="transition-opacity duration-200">{{ $item['label'] }}</span>
+                    <div class="flex items-center gap-stack-md min-w-0">
+                        <span class="material-symbols-outlined shrink-0 transition-transform duration-200 group-hover:scale-110" @if($isActive) style="font-variation-settings: 'FILL' 1;" @endif>{{ $item['icon'] }}</span>
+                        <span x-show="sidebarOpen" class="transition-opacity duration-200 truncate">{{ $item['label'] }}</span>
+                    </div>
+                    @if ($item['route'] === 'peminjaman.index' && isset($terlambatCount) && $terlambatCount > 0)
+                        <span x-show="sidebarOpen" class="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-error text-white shadow-xs shrink-0 animate-pulse">
+                            {{ $terlambatCount }}
+                        </span>
+                        <span x-show="!sidebarOpen" class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error animate-ping"></span>
+                    @endif
                 </a>
             @endforeach
 
@@ -87,14 +102,17 @@
             <div x-show="sidebarOpen" class="mx-3 mt-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-on-primary/40 select-none">Lainnya</div>
             @php
                 $settingItems = [
-                    ['route' => 'laporan', 'icon' => 'analytics', 'label' => 'Laporan', 'match' => ['laporan*']],
-                    ['route' => 'logs.index', 'icon' => 'manage_history', 'label' => 'Log Aktivitas', 'match' => ['logs*']],
                     ['route' => 'pengaturan', 'icon' => 'settings', 'label' => 'Pengaturan', 'match' => ['pengaturan*']],
+                    ['route' => 'arsips.trash', 'icon' => 'delete_sweep', 'label' => 'Arsip Terhapus', 'match' => ['arsips-trash*']],
                 ];
+                if (Auth::user()->isAdmin()) {
+                    $settingItems[] = ['route' => 'users.index', 'icon' => 'group', 'label' => 'Kelola Pengguna', 'match' => ['users*']];
+                    $settingItems[] = ['route' => 'logs.index', 'icon' => 'manage_history', 'label' => 'Log Aktivitas', 'match' => ['logs*']];
+                }
             @endphp
             @foreach ($settingItems as $item)
                 @php
-                    $isActive = request()->routeIs($item['match']);
+                    $isActive = request()->routeIs($item['match']) || ($item['route'] === 'arsips.trash' && $isFromTrash);
                 @endphp
                 <a href="{{ route($item['route']) }}"
                    class="relative flex items-center gap-stack-md px-3 py-stack-md transition-all duration-200 whitespace-nowrap overflow-hidden group
@@ -135,17 +153,33 @@
         {{-- TopNavBar --}}
         <header class="top-0 h-header-height bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flex justify-between items-center px-3 sm:px-4 md:px-6 w-full z-10 shrink-0">
             <div class="flex items-center gap-2 sm:gap-stack-md">
-                <button @@click="sidebarOpen = !sidebarOpen"
+                <button @click="sidebarOpen = !sidebarOpen"
                         class="p-1.5 sm:p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant hover:text-primary"
                         title="Toggle sidebar">
                     <span class="material-symbols-outlined" x-text="sidebarOpen ? 'menu_open' : 'menu'"></span>
                 </button>
                 <span class="text-sm sm:text-base md:text-headline-sm font-bold text-primary dark:text-inverse-primary truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none">Sistem Informasi Arsip Pajak Digital</span>
             </div>
-            <div class="flex items-center gap-stack-lg shrink-0">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                {{-- Lonceng Notifikasi Peminjaman Terlambat --}}
+                <a href="{{ route('peminjaman.index', ['status' => 'terlambat']) }}"
+                   class="relative p-1.5 sm:p-2 rounded-full hover:bg-surface-container transition-colors text-on-surface-variant hover:text-error flex items-center justify-center"
+                   title="{{ isset($terlambatCount) && $terlambatCount > 0 ? $terlambatCount . ' Peminjaman Terlambat!' : 'Tidak ada peminjaman terlambat' }}">
+                    <span class="material-symbols-outlined text-xl sm:text-2xl @if(isset($terlambatCount) && $terlambatCount > 0) text-error animate-bounce @endif">notifications</span>
+                    @if(isset($terlambatCount) && $terlambatCount > 0)
+                        <span class="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-error text-[10px] font-extrabold text-white shadow-xs">
+                            {{ $terlambatCount > 99 ? '99+' : $terlambatCount }}
+                        </span>
+                    @endif
+                </a>
 
-                <div class="flex items-center gap-stack-sm text-on-surface-variant dark:text-surface-variant">
-                    <div class="h-8 w-8 ml-stack-sm rounded-full bg-primary-container border border-outline-variant flex items-center justify-center text-on-primary font-bold text-label-md" title="{{ Auth::user()->name }}">
+                <div class="flex items-center gap-2 text-on-surface-variant dark:text-surface-variant border-l border-outline-variant/60 pl-2 sm:pl-3">
+                    @if (Auth::user()->isAdmin())
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-red-100 text-red-700 border border-red-200">ADMIN</span>
+                    @else
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-blue-700 border border-blue-200">STAFF</span>
+                    @endif
+                    <div class="h-8 w-8 rounded-full bg-primary-container border border-outline-variant flex items-center justify-center text-on-primary font-bold text-label-md" title="{{ Auth::user()->name }}">
                         {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
                     </div>
                 </div>

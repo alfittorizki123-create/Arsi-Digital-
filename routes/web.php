@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Route yang diizinkan untuk semua user terautentikasi (Admin & Staff)
     Route::get('/arsips/pilih-unit', [ArsipController::class, 'pilihUnitUpload'])->name('arsips.pilih_unit');
     Route::post('/arsips/pilih-unit', [ArsipController::class, 'pilihUnit'])->name('arsips.pilih_unit.store');
     Route::get('/arsips/import', [ArsipImportController::class, 'create'])->name('arsips.import');
@@ -32,23 +33,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/arsips/import/confirm', [ArsipImportController::class, 'confirm'])->name('arsips.import.confirm');
     Route::post('/arsips/import/cancel', [ArsipImportController::class, 'cancel'])->name('arsips.import.cancel');
 
-    Route::resource('arsips', ArsipController::class);
+    Route::resource('arsips', ArsipController::class)->except(['destroy']);
     Route::post('/arsips/upload-temp-file', [ArsipController::class, 'uploadTempFile'])->name('arsips.upload_temp_file');
     Route::post('/arsips/{arsip}/upload-file', [ArsipController::class, 'uploadSingleFile'])->name('arsips.upload_file');
     Route::get('/arsip-files/{arsipFile}/preview', [ArsipController::class, 'previewFile'])->name('arsip-files.preview');
-    Route::delete('/arsip-files/{arsipFile}', [ArsipController::class, 'destroyFile'])->name('arsip-files.destroy');
-
-    Route::post('/raks/{rak}/assign-boks', [RakController::class, 'assignBoks'])->name('raks.assign_boks');
-    Route::resource('raks', RakController::class)->only(['index', 'store', 'update', 'destroy']);
-
-    Route::post('/boks', [BoksController::class, 'store'])->name('boks.store');
-    Route::put('/boks/{boks}', [BoksController::class, 'update'])->name('boks.update');
-    Route::delete('/boks/{boks}', [BoksController::class, 'destroy'])->name('boks.destroy');
 
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
     Route::get('/laporan/export', [LaporanController::class, 'export'])->name('laporan.export');
-
-    Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
 
     Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
     Route::get('/peminjaman/arsips/search', [PeminjamanController::class, 'searchArsip'])->name('peminjaman.search_arsip');
@@ -56,16 +47,41 @@ Route::middleware('auth')->group(function () {
     Route::get('/peminjaman/{peminjaman}/json', [PeminjamanController::class, 'json'])->name('peminjaman.json');
     Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
     Route::put('/peminjaman/{peminjaman}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
-    Route::delete('/peminjaman/{peminjaman}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
     Route::post('/peminjaman/{peminjaman}/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('peminjaman.kembalikan');
+    Route::post('/peminjaman/{peminjaman}/batal-kembali', [PeminjamanController::class, 'batalKembali'])->name('peminjaman.batal_kembali');
+
+    Route::post('/raks/{rak}/assign-boks', [RakController::class, 'assignBoks'])->name('raks.assign_boks');
+    Route::resource('raks', RakController::class)->only(['index', 'store', 'update']);
+    Route::post('/boks', [BoksController::class, 'store'])->name('boks.store');
+    Route::put('/boks/{boks}', [BoksController::class, 'update'])->name('boks.update');
 
     Route::get('/pengaturan', [PengaturanController::class, 'index'])->name('pengaturan');
-
     Route::post('/pengaturan/jenis-pajak', [JenisPajakController::class, 'store'])->name('jenis-pajak.store');
     Route::put('/pengaturan/jenis-pajak/{jenisPajak}', [JenisPajakController::class, 'update'])->name('jenis-pajak.update');
-    Route::delete('/pengaturan/jenis-pajak/{jenisPajak}', [JenisPajakController::class, 'destroy'])->name('jenis-pajak.destroy');
-
     Route::post('/pengaturan/unit', [UnitController::class, 'store'])->name('unit.store');
     Route::put('/pengaturan/unit/{unit}', [UnitController::class, 'update'])->name('unit.update');
-    Route::delete('/pengaturan/unit/{unit}', [UnitController::class, 'destroy'])->name('unit.destroy');
+
+    Route::delete('/arsips/{arsip}', [ArsipController::class, 'destroy'])->name('arsips.destroy');
+    Route::delete('/arsip-files/{arsipFile}', [ArsipController::class, 'destroyFile'])->name('arsip-files.destroy');
+    Route::delete('/arsips/{arsip}/legacy-file', [ArsipController::class, 'destroyLegacyFile'])->name('arsips.destroy_legacy_file');
+    Route::get('/arsips-trash', [ArsipController::class, 'trash'])->name('arsips.trash');
+    Route::post('/arsips/{id}/restore', [ArsipController::class, 'restore'])->name('arsips.restore');
+
+    // Route khusus Admin
+    Route::middleware('role:admin')->group(function () {
+        Route::delete('/arsip-files/{arsipFile}', [ArsipController::class, 'destroyFile'])->name('arsip-files.destroy');
+        Route::delete('/peminjaman/{peminjaman}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
+        Route::delete('/raks/{rak}', [RakController::class, 'destroy'])->name('raks.destroy');
+        Route::delete('/boks/{boks}', [BoksController::class, 'destroy'])->name('boks.destroy');
+
+        Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
+
+        Route::delete('/arsips/{id}/force-delete', [ArsipController::class, 'forceDelete'])->name('arsips.force_delete');
+
+        Route::resource('users', \App\Http\Controllers\UserController::class);
+        Route::post('/users/{user}/reset-password', [\App\Http\Controllers\UserController::class, 'resetPassword'])->name('users.reset_password');
+
+        Route::delete('/pengaturan/jenis-pajak/{jenisPajak}', [JenisPajakController::class, 'destroy'])->name('jenis-pajak.destroy');
+        Route::delete('/pengaturan/unit/{unit}', [UnitController::class, 'destroy'])->name('unit.destroy');
+    });
 });

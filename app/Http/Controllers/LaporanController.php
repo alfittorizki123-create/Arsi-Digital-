@@ -36,7 +36,7 @@ class LaporanController extends Controller
             ->when($filters['klasifikasi_keamanan'] ?? null, fn ($q, $v) => $q->where('arsips.klasifikasi_keamanan', $v))
             ->when($filters['unit_id'] ?? null, fn ($q, $v) => $q->where('arsips.unit_id', $v))
             ->groupBy('units.id', 'units.nama_unit', 'units.kode_unit')
-            ->orderByDesc('total')
+            ->orderByDesc('total_berkas')
             ->limit(15)
             ->get();
 
@@ -55,7 +55,7 @@ class LaporanController extends Controller
             ->when($filters['kurun_waktu'] ?? null, fn ($q, $v) => $q->where('kurun_waktu', $v))
             ->when($filters['bulan'] ?? null, fn ($q, $v) => $q->where('bulan', $v))
             ->groupBy('kurun_waktu')
-            ->orderByDesc('kurun_waktu')
+            ->orderByDesc('total_berkas')
             ->get();
 
         $rekapTipe = DB::table('arsips')
@@ -108,10 +108,18 @@ class LaporanController extends Controller
             $rincianParts = [];
             $boksGlobalNums = [];
             $rakNames = [];
+            $numericBoksList = [];
 
             foreach ($boksGroups as $groupKey => $bItems) {
                 $bObj = $bItems->first()->boks;
                 $bNum = $bObj ? $bObj->nomor_boks : ($bItems->first()->nomor_boks ?? null);
+
+                if ($bNum) {
+                    preg_match('/\d+/', $bNum, $m);
+                    if (isset($m[0])) {
+                        $numericBoksList[] = (int)$m[0];
+                    }
+                }
 
                 $explicitNos = $bItems->pluck('nomor_arsip_berkas')->map(fn($v) => (int)$v)->filter(fn($v) => $v > 0)->sort()->values();
                 if ($explicitNos->isNotEmpty()) {
@@ -136,6 +144,9 @@ class LaporanController extends Controller
                 }
             }
 
+            sort($numericBoksList);
+            $minBoksNum = !empty($numericBoksList) ? $numericBoksList[0] : 999999;
+
             $rincianBoksStr = implode('; ', $rincianParts);
             $totalBerkas = $items->count();
             $kurunWaktuStr = $items->pluck('kurun_waktu')->unique()->filter()->implode(', ');
@@ -149,8 +160,12 @@ class LaporanController extends Controller
                 'kurun_waktu' => $kurunWaktuStr,
                 'nomor_boks' => $boksStr,
                 'lokasi_rak' => $rakStr,
+                'min_boks_num' => $minBoksNum,
             ];
-        });
+        })->sortBy([
+            ['min_boks_num', 'asc'],
+            ['unit.nama_unit', 'asc']
+        ])->values();
 
         $perPage = 7;
         $page = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage('rekap_page');

@@ -270,9 +270,9 @@ class ArsipController extends Controller
             ->with('success', 'Data arsip berhasil ditambahkan.');
     }
 
-    public function show(Arsip $arsip)
+    public function show($id)
     {
-        $arsip->load(['jenisPajaks', 'unit', 'files']);
+        $arsip = Arsip::withTrashed()->with(['jenisPajaks', 'unit', 'files'])->findOrFail($id);
 
         return view('arsips.show', compact('arsip'));
     }
@@ -333,15 +333,6 @@ class ArsipController extends Controller
 
     public function destroy(Arsip $arsip)
     {
-        foreach ($arsip->files as $file) {
-            Storage::disk('public')->delete($file->path_file);
-            $file->delete();
-        }
-
-        if ($arsip->path_file) {
-            $this->deleteFile($arsip->path_file);
-        }
-
         $unitId = $arsip->unit_id;
 
         $arsip->delete();
@@ -352,7 +343,56 @@ class ArsipController extends Controller
 
         return redirect()
             ->route('arsips.index')
-            ->with('success', 'Data arsip berhasil dihapus.');
+            ->with('success', 'Data arsip dipindahkan ke menu Arsip Terhapus.');
+    }
+
+    public function trash(Request $request)
+    {
+        $query = Arsip::onlyTrashed()->with(['jenisPajaks', 'unit'])->latest('deleted_at');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('uraian_informasi_arsip', 'like', "%{$s}%")
+                  ->orWhere('kode_klasifikasi', 'like', "%{$s}%")
+                  ->orWhere('nomor_boks', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('unit_id')) {
+            $query->where('unit_id', $request->unit_id);
+        }
+
+        $arsips = $query->paginate(15)->withQueryString();
+        $units = Unit::orderBy('nama_unit')->get();
+
+        return view('arsip-terhapus.index', compact('arsips', 'units'));
+    }
+
+    public function restore($id)
+    {
+        $arsip = Arsip::onlyTrashed()->findOrFail($id);
+        $arsip->restore();
+
+        return redirect()->route('arsips.trash')->with('success', 'Data arsip berhasil dipulihkan.');
+    }
+
+    public function forceDelete($id)
+    {
+        $arsip = Arsip::onlyTrashed()->findOrFail($id);
+
+        foreach ($arsip->files as $file) {
+            Storage::disk('public')->delete($file->path_file);
+            $file->delete();
+        }
+
+        if ($arsip->path_file) {
+            $this->deleteFile($arsip->path_file);
+        }
+
+        $arsip->forceDelete();
+
+        return redirect()->route('arsips.trash')->with('success', 'Data arsip berhasil dihapus permanen.');
     }
 
     public function destroyFile(\App\Models\ArsipFile $arsipFile)
@@ -365,6 +405,23 @@ class ArsipController extends Controller
         }
 
         return back()->with('success', 'File lampiran berhasil dihapus.');
+    }
+
+    public function destroyLegacyFile(Arsip $arsip)
+    {
+        if ($arsip->path_file) {
+            $this->deleteFile($arsip->path_file);
+            $arsip->update([
+                'path_file' => null,
+                'tipe_file' => null,
+            ]);
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'File utama berhasil dihapus.');
     }
 
     public function previewFile(\App\Models\ArsipFile $arsipFile)

@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\LogUserActivity::class,
         ]);
 
+        // Middleware alias
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+        ]);
+
         // Redirect jika belum login
         $middleware->redirectGuestsTo('/login');
 

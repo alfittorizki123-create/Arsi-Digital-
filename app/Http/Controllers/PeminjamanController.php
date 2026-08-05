@@ -13,15 +13,27 @@ class PeminjamanController extends Controller
     public function json(Peminjaman $peminjaman)
     {
         $peminjaman->load(['arsips.unit', 'arsips.boks']);
-        $arsipsData = $peminjaman->arsips->map(fn($a) => [
-            'id' => $a->id,
-            'kode' => $a->kode_klasifikasi ?? '-',
-            'uraian' => $a->uraian_informasi_arsip ?? '-',
-            'unit' => $a->unit?->nama_unit ?? '-',
-            'boks' => $a->boks ? "Boks {$a->boks->nomor_boks}" : '-',
-            'kurun' => $a->kurun_waktu ?? '-',
-            'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian') . ' [' . ($a->unit?->nama_unit ?? '-') . ']',
-        ]);
+        
+        $arsipsData = $peminjaman->arsips->map(function($a) {
+            $boksStr = '-';
+            if ($a->boks) {
+                // Determine absolute position of this arsip inside its boks to keep numbering consistent
+                $no = \App\Models\Arsip::where('boks_id', $a->boks_id)
+                                        ->where('id', '<=', $a->id)
+                                        ->count();
+                $boksStr = "Boks {$a->boks->nomor_boks} No {$no}";
+            }
+
+            return [
+                'id' => $a->id,
+                'kode' => $a->kode_klasifikasi ?? '-',
+                'uraian' => $a->uraian_informasi_arsip ?? '-',
+                'unit' => $a->unit?->nama_unit ?? '-',
+                'boks' => $boksStr,
+                'kurun' => $a->kurun_waktu ?? '-',
+                'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian') . ' [' . ($a->unit?->nama_unit ?? '-') . ']',
+            ];
+        });
 
         return response()->json([
             'id' => $peminjaman->id,
@@ -88,14 +100,22 @@ class PeminjamanController extends Controller
         foreach ($arsips as $groupKey => $items) {
             $boks = $items->first()->boks;
             $groupLabel = $boks ? "Boks {$boks->nomor_boks}" : 'Tanpa Boks';
+            
+            $counter = 1;
+
             $result[] = [
                 'group' => $groupLabel,
-                'items' => $items->map(fn($a) => [
-                    'id' => $a->id,
-                    'kode' => $a->kode_klasifikasi ?? '-',
-                    'uraian' => $a->uraian_informasi_arsip ?? '-',
-                    'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian'),
-                ]),
+                'items' => $items->map(function($a) use (&$counter, $boks) {
+                    $itemNo = $boks ? "Boks {$boks->nomor_boks} No {$counter}" : "No {$counter}";
+                    $counter++;
+                    return [
+                        'id' => $a->id,
+                        'kode' => $a->kode_klasifikasi ?? '-',
+                        'boks_label' => $itemNo,
+                        'uraian' => $a->uraian_informasi_arsip ?? '-',
+                        'label' => ($a->kode_klasifikasi ?? 'Tanpa Kode') . ' - ' . ($a->uraian_informasi_arsip ?? 'Tanpa Uraian'),
+                    ];
+                }),
             ];
         }
 
@@ -104,7 +124,7 @@ class PeminjamanController extends Controller
 
     public function index(Request $request)
     {
-        $query = Peminjaman::with(['arsips.unit'])->latest('tanggal_pinjam');
+        $query = Peminjaman::with(['arsips.unit'])->latest('id');
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -234,5 +254,19 @@ class PeminjamanController extends Controller
         ]);
 
         return redirect()->route('peminjaman.index')->with('success', 'Arsip berhasil ditandai sudah dikembalikan.');
+    }
+
+    public function batalKembali(Peminjaman $peminjaman)
+    {
+        if ($peminjaman->status === 'dipinjam') {
+            return redirect()->route('peminjaman.index')->with('error', 'Arsip ini sudah berstatus dipinjam.');
+        }
+
+        $peminjaman->update([
+            'tanggal_dikembalikan' => null,
+            'status' => 'dipinjam',
+        ]);
+
+        return redirect()->route('peminjaman.index')->with('success', 'Arsip berhasil ditandai sedang dipinjam.');
     }
 }

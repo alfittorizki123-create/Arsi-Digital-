@@ -3,12 +3,13 @@
 @section('title', 'Laporan')
 
 @section('content')
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-md">
-        <div>
-            <h2 class="font-display-md text-display-md text-on-surface">Laporan Arsip</h2>
-            <p class="text-body-md text-on-surface-variant mt-1">Rekapitulasi data arsip pajak daerah.</p>
+    <div x-data="{ exportModalOpen: false }">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-stack-md mb-stack-md">
+            <div>
+                <h2 class="font-display-md text-display-md text-on-surface">Laporan Arsip</h2>
+                <p class="text-body-md text-on-surface-variant mt-1">Rekapitulasi data arsip pajak daerah.</p>
+            </div>
         </div>
-    </div>
 
 
 
@@ -101,29 +102,27 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-stack-lg mb-stack-lg">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-stack-lg mb-stack-lg">
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
             <div class="px-stack-md py-stack-md border-b border-outline-variant">
-                <h3 class="text-headline-sm font-bold text-on-surface">Per Unit/UPT (Top 15)</h3>
+                <h3 class="text-headline-sm font-bold text-on-surface">Per UP/UPT (Paling Banyak Berkas)</h3>
             </div>
             <div class="overflow-x-auto max-h-80">
                 <table class="w-full text-left">
                     <thead class="bg-surface border-b border-outline-variant sticky top-0">
                         <tr>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant">Unit</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Row</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Berkas</th>
+                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant">Unit / UPT</th>
+                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Jumlah Berkas</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-variant">
                         @forelse ($rekapUnit as $row)
-                            <tr>
-                                <td class="py-2 px-4 text-body-md text-on-surface">{{ $row->nama_unit }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total) }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total_berkas) }}</td>
+                            <tr class="hover:bg-surface-container/30 transition-colors">
+                                <td class="py-2 px-4 text-body-md text-on-surface font-medium">{{ $row->nama_unit }}</td>
+                                <td class="py-2 px-4 text-body-md text-primary font-bold text-right">{{ number_format($row->total_berkas) }} berkas</td>
                             </tr>
                         @empty
-                            <tr><td colspan="3" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data</td></tr>
+                            <tr><td colspan="2" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -132,54 +131,24 @@
 
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
             <div class="px-stack-md py-stack-md border-b border-outline-variant">
-                <h3 class="text-headline-sm font-bold text-on-surface">Per Kurun Waktu</h3>
+                <h3 class="text-headline-sm font-bold text-on-surface">Per Kurun Waktu (Paling Banyak Berkas)</h3>
             </div>
             <div class="overflow-x-auto max-h-80">
                 <table class="w-full text-left">
                     <thead class="bg-surface border-b border-outline-variant sticky top-0">
                         <tr>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant">Tahun</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Row</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Berkas</th>
+                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant">Tahun / Kurun Waktu</th>
+                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Jumlah Berkas</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-outline-variant">
                         @forelse ($rekapTahun as $row)
-                            <tr>
-                                <td class="py-2 px-4 text-body-md text-on-surface">{{ $row->kurun_waktu }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total) }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total_berkas) }}</td>
+                            <tr class="hover:bg-surface-container/30 transition-colors">
+                                <td class="py-2 px-4 text-body-md text-on-surface font-medium">{{ $row->kurun_waktu ?? '-' }}</td>
+                                <td class="py-2 px-4 text-body-md text-primary font-bold text-right">{{ number_format($row->total_berkas) }} berkas</td>
                             </tr>
                         @empty
-                            <tr><td colspan="3" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden shadow-sm">
-            <div class="px-stack-md py-stack-md border-b border-outline-variant">
-                <h3 class="text-headline-sm font-bold text-on-surface">Per Tipe Arsip</h3>
-            </div>
-            <div class="overflow-x-auto max-h-80">
-                <table class="w-full text-left">
-                    <thead class="bg-surface border-b border-outline-variant sticky top-0">
-                        <tr>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant">Tipe</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Row</th>
-                            <th class="py-2 px-4 font-table-header text-table-header text-on-surface-variant text-right">Berkas</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline-variant">
-                        @forelse ($rekapTipe as $row)
-                            <tr>
-                                <td class="py-2 px-4 text-body-md text-on-surface capitalize">{{ $row->tipe_arsip }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total) }}</td>
-                                <td class="py-2 px-4 text-body-md text-on-surface font-medium text-right">{{ number_format($row->total_berkas) }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="3" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data</td></tr>
+                            <tr><td colspan="2" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -196,12 +165,12 @@
             </h3>
             <div class="flex items-center gap-3">
                 <span class="text-xs text-on-surface-variant font-medium">Total: {{ $rekapArsipUnits->total() }} Unit Terdaftar</span>
-                <a href="{{ route('laporan.export', request()->query()) }}"
-                   style="background-color: #059669; color: #ffffff;"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs hover:opacity-90 transition-all shadow-md">
+                <button type="button" @click="exportModalOpen = true"
+                        style="background-color: #059669; color: #ffffff;"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs hover:opacity-90 transition-all shadow-md">
                     <span class="material-symbols-outlined text-sm">download</span>
                     <span>Unduh Excel Rekap Ini</span>
-                </a>
+                </button>
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -221,7 +190,9 @@
                         <tr class="hover:bg-surface-container/50 transition-colors">
                             <td class="py-3 px-4 text-center font-bold text-on-surface-variant">{{ ($rekapArsipUnits->currentPage() - 1) * $rekapArsipUnits->perPage() + $index + 1 }}</td>
                             <td class="py-3 px-4 font-semibold text-on-surface">
-                                {{ $r->unit->nama_unit }}
+                                <a href="{{ route('laporan', array_merge(request()->query(), ['unit_id' => $r->unit->id])) }}" class="text-primary hover:underline font-bold" title="Klik untuk memfilter laporan khusus unit ini">
+                                    {{ $r->unit->nama_unit }}
+                                </a>
                                 @if($r->rincian_boks)
                                     <span class="font-normal text-on-surface-variant text-[11px] block mt-0.5">( {{ $r->rincian_boks }} )</span>
                                 @endif
@@ -304,4 +275,55 @@
             </div>
         @endif
     </div>
+
+    {{-- MODAL OPSI EXPORT EXCEL --}}
+    <div x-show="exportModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="exportModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-black/50" aria-hidden="true" @click="exportModalOpen = false"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div x-show="exportModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-surface rounded-2xl shadow-2xl border border-outline-variant">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-outline-variant">
+                    <h3 class="text-headline-sm font-bold text-on-surface flex items-center gap-2" id="modal-title">
+                        <span class="material-symbols-outlined text-primary">download</span>
+                        Pilih Opsi Export Excel
+                    </h3>
+                    <button type="button" @click="exportModalOpen = false" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <form method="GET" action="{{ route('laporan.export') }}" @submit="exportModalOpen = false">
+                    @if(!empty($filters['jenis_pajak_id'])) <input type="hidden" name="jenis_pajak_id" value="{{ $filters['jenis_pajak_id'] }}"> @endif
+                    @if(!empty($filters['unit_id'])) <input type="hidden" name="unit_id" value="{{ $filters['unit_id'] }}"> @endif
+                    @if(!empty($filters['kurun_waktu'])) <input type="hidden" name="kurun_waktu" value="{{ $filters['kurun_waktu'] }}"> @endif
+                    @if(!empty($filters['bulan'])) <input type="hidden" name="bulan" value="{{ $filters['bulan'] }}"> @endif
+                    @if(!empty($filters['tipe_arsip'])) <input type="hidden" name="tipe_arsip" value="{{ $filters['tipe_arsip'] }}"> @endif
+                    @if(!empty($filters['kondisi'])) <input type="hidden" name="kondisi" value="{{ $filters['kondisi'] }}"> @endif
+                    @if(!empty($filters['klasifikasi_keamanan'])) <input type="hidden" name="klasifikasi_keamanan" value="{{ $filters['klasifikasi_keamanan'] }}"> @endif
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-label-md font-bold text-on-surface mb-1.5">Pilih Status Arsip <span class="text-error">*</span></label>
+                            <select name="status" class="w-full px-3 py-2.5 border border-outline-variant rounded-lg bg-surface focus:outline-none focus:border-primary text-body-md font-semibold text-on-surface shadow-xs">
+                                <option value="inaktif" @selected(($filters['status'] ?? '') === 'inaktif' || empty($filters['status']))>Arsip Inaktif</option>
+                                <option value="aktif" @selected(($filters['status'] ?? '') === 'aktif')>Arsip Aktif</option>
+                                <option value="" @selected(($filters['status'] ?? '') === '')>Semua Status</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-3 border-t border-outline-variant flex justify-end gap-2">
+                        <button type="button" @click="exportModalOpen = false" class="px-4 py-2 border border-outline-variant rounded-lg text-on-surface-variant text-xs font-bold hover:bg-surface-container transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" style="background-color: #059669; color: #ffffff;" class="px-4 py-2 rounded-lg font-bold text-xs hover:opacity-90 transition-all shadow-md flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            <span>Download File Excel</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

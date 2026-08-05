@@ -10,34 +10,38 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $admins = [
+        $users = [
             [
                 'username' => 'admin',
                 'name' => 'Admin Bapenda',
                 'email' => 'admin@bapenda.riau.go.id',
                 'password' => 'password',
+                'role' => 'admin',
             ],
             [
-                'username' => 'admin2',
-                'name' => 'Admin Bapenda 2',
-                'email' => 'admin2@bapenda.riau.go.id',
+                'username' => 'staff',
+                'name' => 'Staff Arsip 1',
+                'email' => 'staff@bapenda.riau.go.id',
                 'password' => 'password',
+                'role' => 'staff',
             ],
             [
-                'username' => 'admin3',
-                'name' => 'Admin Bapenda 3',
-                'email' => 'admin3@bapenda.riau.go.id',
+                'username' => 'staff2',
+                'name' => 'Staff Arsip 2',
+                'email' => 'staff2@bapenda.riau.go.id',
                 'password' => 'password',
+                'role' => 'staff',
             ],
         ];
 
-        foreach ($admins as $admin) {
+        foreach ($users as $u) {
             User::updateOrCreate(
-                ['username' => $admin['username']],
+                ['username' => $u['username']],
                 [
-                    'name' => $admin['name'],
-                    'email' => $admin['email'],
-                    'password' => Hash::make($admin['password']),
+                    'name' => $u['name'],
+                    'email' => $u['email'],
+                    'password' => Hash::make($u['password']),
+                    'role' => $u['role'],
                 ]
             );
         }

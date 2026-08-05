@@ -90,13 +90,15 @@
                                         <button type="button" @@click="activeJenis = { id: {{ $jp->id }}, nama_jenis_pajak: {{ json_encode($jp->nama_jenis_pajak) }}, kode: {{ json_encode($jp->kode) }} }; editJenisModal = true" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm" title="Edit">
                                             <span class="material-symbols-outlined" style="font-size: 14px;">edit</span> Edit
                                         </button>
-                                        <form action="{{ route('jenis-pajak.destroy', $jp) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus jenis pajak {{ $jp->kode }}?">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
-                                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
-                                            </button>
-                                        </form>
+                                        @if (Auth::user()->isAdmin())
+                                            <form action="{{ route('jenis-pajak.destroy', $jp) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus jenis pajak {{ $jp->kode }}?">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
+                                                    <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
+                                                </button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -198,13 +200,15 @@
                                         <button type="button" @@click="activeUnit = { id: {{ $unit->id }}, nama_unit: {{ json_encode($unit->nama_unit) }}, kode_unit: {{ json_encode($unit->kode_unit) }} }; editUnitModal = true" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-primary-container text-on-primary hover:bg-primary-container/90 transition-colors shadow-sm" title="Edit">
                                             <span class="material-symbols-outlined" style="font-size: 14px;">edit</span> Edit
                                         </button>
-                                        <form action="{{ route('unit.destroy', $unit) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus unit {{ $unit->kode_unit }}?">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
-                                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
-                                            </button>
-                                        </form>
+                                        @if (Auth::user()->isAdmin())
+                                            <form action="{{ route('unit.destroy', $unit) }}" method="POST" class="inline" data-confirm="Apakah Anda yakin ingin menghapus unit {{ $unit->kode_unit }}?">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-error-container text-on-error-container hover:bg-error-container/80 transition-colors shadow-sm" title="Hapus">
+                                                    <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Hapus
+                                                </button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

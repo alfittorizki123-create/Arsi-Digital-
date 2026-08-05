@@ -48,27 +48,25 @@ window.showConfirm = function (message, title = 'Konfirmasi') {
         const id = 'confirm-' + Date.now();
         const wrapper = document.createElement('div');
         wrapper.id = id;
-        wrapper.className = 'fixed inset-0 z-[9998] flex items-center justify-center p-4';
+        wrapper.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
         wrapper.innerHTML = `
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-            <div class="relative bg-surface/95 backdrop-blur-xl rounded-2xl border border-outline-variant shadow-xl max-w-md w-full p-6 transform scale-95 opacity-0 transition-all duration-200">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-amber-600">help</span>
-                    </div>
-                    <h3 class="text-title-md font-bold text-on-surface">${title}</h3>
+            <div class="absolute inset-0 bg-black/60 transition-opacity"></div>
+            <div class="relative bg-surface rounded-2xl shadow-2xl w-full p-6 border border-outline-variant text-center transform scale-95 opacity-0 transition-all duration-200" style="max-width: 380px;">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-xs" style="background-color: #fee2e2; color: #dc2626;">
+                    <span class="material-symbols-outlined text-2xl">help_outline</span>
                 </div>
-                <p class="text-body-md text-on-surface-variant mb-6">${message}</p>
-                <div class="flex justify-end gap-3">
-                    <button id="${id}-cancel" class="px-5 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors">Batal</button>
-                    <button id="${id}-confirm" class="px-5 py-2.5 rounded-lg bg-error text-white font-bold text-sm hover:bg-error/90 transition-colors shadow-sm">Ya, Lanjutkan</button>
+                <h3 class="text-headline-sm font-bold text-on-surface mb-1">${title}</h3>
+                <p class="text-xs text-on-surface-variant mb-5 leading-relaxed">${message}</p>
+                <div class="flex justify-center gap-3 pt-3 border-t border-outline-variant/40">
+                    <button id="${id}-cancel" type="button" class="px-4 py-2 text-xs font-bold text-on-surface-variant bg-surface hover:bg-surface-container border border-outline-variant rounded-lg transition-colors">Batal</button>
+                    <button id="${id}-confirm" type="button" class="px-5 py-2 text-xs font-bold text-white rounded-lg shadow-sm transition-colors" style="background-color: #dc2626;">Ya, Lanjutkan</button>
                 </div>
             </div>
         `;
         document.body.appendChild(wrapper);
 
         const card = wrapper.querySelector('.relative');
-        requestAnimationFrame(() => { wrapper.querySelector('.absolute').style.opacity = '1'; card.style.opacity = '1'; card.style.transform = 'scale(1)'; });
+        requestAnimationFrame(() => { card.style.opacity = '1'; card.style.transform = 'scale(1)'; });
 
         const cleanup = (result) => { wrapper.remove(); resolve(result); };
         document.getElementById(`${id}-cancel`).onclick = () => cleanup(false);

@@ -31,23 +31,38 @@ class Peminjaman extends Model
         return $this->belongsToMany(Arsip::class, 'peminjaman_arsip', 'peminjaman_id', 'arsip_id')->withTimestamps();
     }
 
+    public function getIsTerlambatAttribute(): bool
+    {
+        return $this->status === 'dipinjam' 
+            && $this->tanggal_kembali_rencana 
+            && $this->tanggal_kembali_rencana->startOfDay() < now()->startOfDay();
+    }
+
     public function getStatusBadgeAttribute(): string
     {
+        if ($this->is_terlambat) {
+            return 'bg-error text-white font-bold shadow-sm animate-pulse';
+        }
+
         return match ($this->status) {
-            'dipinjam' => 'bg-warning-container text-on-warning-container',
-            'dikembalikan' => 'bg-primary-fixed text-on-primary-fixed',
-            'terlambat' => 'bg-error-container text-on-error-container',
-            default => 'bg-surface-container-highest text-on-surface-variant',
+            'dipinjam' => 'bg-warning-container text-on-warning-container font-bold',
+            'dikembalikan' => 'bg-primary/20 text-primary font-bold',
+            'terlambat' => 'bg-error text-white font-bold shadow-sm',
+            default => 'bg-surface-container-highest text-on-surface-variant font-bold',
         };
     }
 
     public function getStatusLabelAttribute(): string
     {
+        if ($this->is_terlambat) {
+            return 'TERLAMBAT';
+        }
+
         return match ($this->status) {
-            'dipinjam' => 'Dipinjam',
-            'dikembalikan' => 'Dikembalikan',
-            'terlambat' => 'Terlambat',
-            default => '-',
+            'dipinjam' => 'DIPINJAM',
+            'dikembalikan' => 'DIKEMBALIKAN',
+            'terlambat' => 'TERLAMBAT',
+            default => strtoupper($this->status),
         };
     }
 }

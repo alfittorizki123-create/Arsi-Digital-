@@ -9,16 +9,38 @@
             <p class="text-body-md text-on-surface-variant mt-1">Informasi lengkap arsip @if($arsip->kode_klasifikasi){{ $arsip->kode_klasifikasi }}@else(No. kode)@endif.</p>
         </div>
         <div class="flex items-center gap-stack-sm">
-            <a href="{{ route('arsips.index', $arsip->unit_id ? ['unit_id' => $arsip->unit_id] : []) }}" class="flex items-center gap-2 px-4 py-2 rounded border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors">
-                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
-                Kembali
-            </a>
-            <a href="{{ route('arsips.edit', $arsip) }}" class="flex items-center gap-2 px-4 py-2 rounded bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary-container/90 transition-colors shadow-sm">
-                <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
-                Edit
-            </a>
+            @if (request('from') === 'trash' || $arsip->trashed())
+                <a href="{{ route('arsips.trash') }}" class="flex items-center gap-2 px-4 py-2 rounded border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+                    Kembali 
+                </a>
+            @else
+                <a href="{{ route('arsips.index', $arsip->unit_id ? ['unit_id' => $arsip->unit_id] : []) }}" class="flex items-center gap-2 px-4 py-2 rounded border border-outline-variant text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+                    Kembali
+                </a>
+                <a href="{{ route('arsips.edit', $arsip) }}" class="flex items-center gap-2 px-4 py-2 rounded bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary-container/90 transition-colors shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                    Edit
+                </a>
+            @endif
         </div>
     </div>
+
+    @if (request('from') === 'trash' || $arsip->trashed())
+        <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 mb-stack-md flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 text-xs text-amber-900 dark:text-amber-200 font-bold">
+                <span class="material-symbols-outlined text-amber-600 text-lg">delete_sweep</span>
+                <span>Arsip ini saat ini berada di menu Arsip Terhapus (Terhapus Sementara).</span>
+            </div>
+            <form action="{{ route('arsips.restore', $arsip->id) }}" method="POST" class="inline" data-confirm="Pulihkan data arsip ini kembali ke daftar utama?">
+                @csrf
+                <button type="submit" style="background-color: #16a34a !important; color: #ffffff !important;" class="px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-90 transition-colors">
+                    Pulihkan Sekarang
+                </button>
+            </form>
+        </div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-stack-lg">
         <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-stack-lg shadow-sm">

@@ -60,7 +60,6 @@
                             <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant whitespace-nowrap">PEMINJAM</th>
                             <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant whitespace-nowrap">TGL PINJAM</th>
                             <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant text-center whitespace-nowrap">RENCANA KEMBALI</th>
-                            <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant text-center whitespace-nowrap">DIKEMBALIKAN</th>
                             <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant text-center whitespace-nowrap">STATUS</th>
                             <th class="py-3 px-4 font-table-header text-xs text-on-surface-variant text-right whitespace-nowrap">AKSI</th>
                         </tr>
@@ -79,9 +78,8 @@
                                             <span class="material-symbols-outlined text-base text-primary shrink-0 group-hover:scale-110 transition-transform">description</span>
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex items-center gap-1.5 flex-wrap">
-                                                    <span class="font-bold text-primary text-xs">{{ $firstArsip->kode_klasifikasi ?? '-' }}</span>
                                                     @if($firstArsip->unit)
-                                                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-on-surface font-semibold">{{ $firstArsip->unit->nama_unit }}</span>
+                                                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-on-surface font-bold text-primary">{{ $firstArsip->unit->nama_unit }}</span>
                                                     @endif
                                                 </div>
                                                 <span class="text-xs text-on-surface-variant block leading-tight line-clamp-1 group-hover:text-primary transition-colors">
@@ -102,7 +100,6 @@
                                 <td class="py-3 px-4 text-body-sm text-on-surface font-medium whitespace-nowrap">{{ $p->nama_peminjam }}</td>
                                 <td class="py-3 px-4 text-body-sm text-on-surface-variant whitespace-nowrap font-mono">{{ $p->tanggal_pinjam->format('d/m/Y') }}</td>
                                 <td class="py-3 px-4 text-body-sm text-on-surface-variant text-center whitespace-nowrap font-mono">{{ $p->tanggal_kembali_rencana ? $p->tanggal_kembali_rencana->format('d/m/Y') : '-' }}</td>
-                                <td class="py-3 px-4 text-body-sm text-on-surface-variant text-center whitespace-nowrap font-mono">{{ $p->tanggal_dikembalikan ? $p->tanggal_dikembalikan->format('d/m/Y') : '-' }}</td>
                                 <td class="py-3 px-4 text-center whitespace-nowrap">
                                     <span class="inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold uppercase {{ $p->status_badge }}">
                                         {{ $p->status_label }}
@@ -111,10 +108,10 @@
                                 <td class="py-3 px-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-2 whitespace-nowrap">
                                         <button @click="openDetailModal({{ $p->id }})"
-                                                class="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors shadow-sm"
+                                                class="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 transition-colors shadow-sm"
                                                 title="Lihat Detail Peminjaman">
                                             <span class="material-symbols-outlined text-sm">visibility</span>
-                                            <span>Detail</span>
+                                            <span>Lihat</span>
                                         </button>
 
                                         @if ($p->status === 'dipinjam')
@@ -157,13 +154,56 @@
                         {{-- Pilih Unit --}}
                         <div>
                             <label class="block text-label-md font-bold text-on-surface-variant mb-1">Pilih Unit <span class="text-error">*</span></label>
-                            <select x-model="createUnitId" @change="loadArsipsByUnit()"
-                                    class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface text-sm focus:outline-none focus:border-primary">
-                                <option value="">— Pilih Unit —</option>
-                                @foreach ($units as $unit)
-                                    <option value="{{ $unit->id }}">{{ $unit->nama_unit }} ({{ $unit->kode_unit }})</option>
-                                @endforeach
-                            </select>
+                            <div x-data="{
+                                open: false,
+                                search: '',
+                                units: {{ Js::from($units->map(fn($u) => ['id' => $u->id, 'label' => $u->nama_unit . ' (' . $u->kode_unit . ')'])->values()) }},
+                                get filteredUnits() {
+                                    if (this.search === '') return this.units;
+                                    return this.units.filter(u => u.label.toLowerCase().includes(this.search.toLowerCase()));
+                                },
+                                selectUnit(id) {
+                                    this.createUnitId = id;
+                                    this.open = false;
+                                    this.search = '';
+                                    this.loadArsipsByUnit();
+                                },
+                                get selectedUnitLabel() {
+                                    const u = this.units.find(u => u.id == this.createUnitId);
+                                    return u ? u.label : '— Pilih Unit —';
+                                }
+                            }" class="relative" @click.outside="open = false">
+                                <button type="button" @click="open = !open"
+                                        class="w-full px-4 py-2.5 border border-outline-variant rounded-lg bg-surface text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary flex items-center justify-between shadow-sm transition-colors hover:bg-surface-container-lowest">
+                                    <span x-text="selectedUnitLabel" :class="!createUnitId ? 'text-on-surface-variant' : 'text-on-surface font-medium'"></span>
+                                    <span class="material-symbols-outlined text-on-surface-variant transition-transform duration-200" :class="open ? 'rotate-180' : ''">expand_more</span>
+                                </button>
+                                <div x-show="open" x-transition.opacity x-transition.scale.origin.top
+                                     class="absolute z-[60] w-full mt-1 bg-surface border border-outline-variant rounded-xl shadow-lg max-h-72 flex flex-col overflow-hidden"
+                                     style="display: none;">
+                                    <div class="p-2 border-b border-outline-variant bg-surface-container-lowest">
+                                        <div class="relative">
+                                            <span class="material-symbols-outlined absolute left-3 top-1.5 text-on-surface-variant text-[20px]">search</span>
+                                            <input type="text" x-model="search" placeholder="Cari unit..."
+                                                   class="w-full pl-9 pr-3 py-1.5 bg-surface text-sm border border-outline-variant rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                                   @keydown.enter.prevent="if(filteredUnits.length === 1) selectUnit(filteredUnits[0].id)">
+                                        </div>
+                                    </div>
+                                    <div class="overflow-y-auto p-1.5 space-y-0.5 max-h-60">
+                                        <template x-for="unit in filteredUnits" :key="unit.id">
+                                            <button type="button" @click="selectUnit(unit.id)"
+                                                    class="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center justify-between group"
+                                                    :class="createUnitId == unit.id ? 'bg-primary-fixed text-on-primary-fixed font-bold' : 'text-on-surface hover:bg-surface-container'">
+                                                <span x-text="unit.label"></span>
+                                                <span x-show="createUnitId == unit.id" class="material-symbols-outlined text-primary text-[18px]">check</span>
+                                            </button>
+                                        </template>
+                                        <div x-show="filteredUnits.length === 0" class="px-4 py-3 text-sm text-on-surface-variant text-center italic">
+                                            Unit tidak ditemukan.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Daftar Arsip per Boks --}}
@@ -188,7 +228,7 @@
                                                     <input type="checkbox" :value="item.id" x-model="selectedCreateIds"
                                                            class="w-4 h-4 rounded text-primary focus:ring-primary shrink-0">
                                                     <div class="min-w-0">
-                                                        <span class="text-xs font-bold text-primary" x-text="item.kode"></span>
+                                                        <span class="text-xs font-bold text-primary" x-text="item.boks_label"></span>
                                                         <span class="text-xs text-on-surface-variant block leading-tight line-clamp-1" x-text="item.uraian"></span>
                                                     </div>
                                                 </label>
@@ -215,8 +255,8 @@
                                        class="w-full px-3 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary">
                             </div>
                             <div>
-                                <label class="block text-label-md font-bold text-on-surface-variant mb-1">Instansi / Unit</label>
-                                <input type="text" name="instansi" placeholder="Contoh: Bapenda, Kejaksaan"
+                                <label class="block text-label-md font-bold text-on-surface-variant mb-1">Unit/Bidang</label>
+                                <input type="text" name="instansi" placeholder="Contoh: Bagian Data"
                                        class="w-full px-3 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary">
                             </div>
                         </div>
@@ -282,52 +322,57 @@
                         </template>
                     @endforeach
 
-                    <div class="space-y-4">
-                        {{-- Pilih Unit --}}
+                    <div class="space-y-3">
+                        {{-- Daftar Arsip yang Dipinjam --}}
                         <div>
-                            <label class="block text-label-md font-bold text-on-surface-variant mb-1">Pilih Unit <span class="text-error">*</span></label>
-                            <select x-model="editUnitId" @change="loadEditArsipsByUnit()"
-                                    class="w-full px-3 py-2 border border-outline-variant rounded-lg bg-surface text-sm focus:outline-none focus:border-primary">
-                                <option value="">— Pilih Unit —</option>
-                                @foreach ($units as $unit)
-                                    <option value="{{ $unit->id }}">{{ $unit->nama_unit }} ({{ $unit->kode_unit }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Daftar Arsip per Boks --}}
-                        <div x-show="editUnitId" class="border border-outline-variant rounded-xl overflow-hidden">
-                            <div class="bg-surface-container/40 px-4 py-2 text-xs font-bold text-on-surface-variant border-b border-outline-variant flex items-center justify-between">
-                                <span>Pilih Arsip yang Akan Dipinjam</span>
-                                <span x-text="selectedEditIds.length + ' dipilih'"></span>
-                            </div>
-                            <div class="max-h-64 overflow-y-auto p-3 space-y-3">
-                                <template x-for="group in editArsipGroups" :key="group.group">
-                                    <div>
-                                        <label class="flex items-center gap-2 px-2 py-1.5 bg-surface-container/60 rounded-lg cursor-pointer font-bold text-xs text-on-surface mb-1">
-                                            <input type="checkbox" @change="toggleEditGroup(group)" :checked="isEditGroupFullyChecked(group)"
-                                                   class="w-4 h-4 rounded text-primary focus:ring-primary">
-                                            <span class="material-symbols-outlined text-sm text-primary">package_2</span>
-                                            <span x-text="group.group"></span>
-                                            <span class="text-on-surface-variant font-normal" x-text="`(${group.items.length})`"></span>
-                                        </label>
-                                        <div class="ml-2 space-y-1">
-                                            <template x-for="item in group.items" :key="item.id">
-                                                <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-surface-container/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" :value="item.id" x-model="selectedEditIds"
-                                                           class="w-4 h-4 rounded text-primary focus:ring-primary shrink-0">
-                                                    <div class="min-w-0">
-                                                        <span class="text-xs font-bold text-primary" x-text="item.kode"></span>
-                                                        <span class="text-xs text-on-surface-variant block leading-tight line-clamp-1" x-text="item.uraian"></span>
+                            <label class="block text-label-md font-bold text-on-surface-variant mb-1">Arsip yang Dipinjam</label>
+                            <div class="border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
+                                <ul class="divide-y divide-outline-variant/40">
+                                    <template x-for="(item, index) in editArsipsList.slice((editPage - 1) * editPerPage, editPage * editPerPage)" :key="'edit-list-' + item.id">
+                                        <li class="px-2 py-1.5 flex items-start justify-between gap-2 hover:bg-surface-container/20 transition-colors">
+                                            <div class="flex items-start gap-2">
+                                                <div class="w-6 h-6 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                                                    <span class="material-symbols-outlined text-[14px]">inventory_2</span>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                                        <span class="text-[11px] font-bold text-primary" x-text="item.boks"></span>
+                                                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-bold" x-text="item.unit"></span>
                                                     </div>
-                                                </label>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
-                                <p x-show="editArsipGroups.length === 0 && editUnitId" class="text-center text-xs text-on-surface-variant italic py-4">
-                                    Tidak ada arsip untuk unit ini.
-                                </p>
+                                                    <p class="text-xs text-on-surface-variant leading-tight" x-text="item.uraian"></p>
+                                                </div>
+                                            </div>
+                                            <button type="button" @click="removeEditArsip(item.id)" class="shrink-0 px-2.5 py-1 text-[11px] font-bold text-error bg-error/10 hover:bg-error/20 rounded-lg flex items-center gap-1 transition-colors mt-0.5" title="Hapus dari daftar">
+                                                <span class="material-symbols-outlined text-[14px]">delete</span>
+                                                <span>Hapus</span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            
+                            {{-- Paginasi Arsip Dipinjam (Batas 4) --}}
+                            <div x-show="Math.ceil(editArsipsList.length / editPerPage) > 1" class="flex items-center justify-end gap-2 mt-2 px-1 text-xs">
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" @click="if (editPage > 1) editPage--"
+                                            :disabled="editPage === 1"
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                        &laquo; Prev
+                                    </button>
+                                    <template x-for="p in Math.ceil(editArsipsList.length / editPerPage)" :key="p">
+                                        <button type="button" @click="editPage = p"
+                                                :class="editPage === p ? 'bg-primary text-on-primary font-bold shadow-sm' : 'bg-surface text-on-surface hover:bg-surface-container border border-outline-variant'"
+                                                class="min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold flex items-center justify-center transition-colors">
+                                            <span x-text="p"></span>
+                                        </button>
+                                    </template>
+
+                                    <button type="button" @click="if (editPage < Math.ceil(editArsipsList.length / editPerPage)) editPage++"
+                                            :disabled="editPage === Math.ceil(editArsipsList.length / editPerPage)"
+                                            class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
+                                        Next &raquo;
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -352,8 +397,8 @@
 
                         <div>
                             <label class="block text-label-md font-bold text-on-surface-variant mb-1">Keperluan</label>
-                            <textarea name="keperluan" rows="2" x-model="editKeperluan"
-                                      class="w-full px-3 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary"></textarea>
+                            <textarea name="keperluan" rows="1" x-model="editKeperluan"
+                                      class="w-full px-3 py-1.5 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary"></textarea>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -372,11 +417,11 @@
                         <div>
                             <label class="block text-label-md font-bold text-on-surface-variant mb-1">Keterangan</label>
                             <textarea name="keterangan" rows="1" x-model="editKeterangan"
-                                      class="w-full px-3 py-2 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary"></textarea>
+                                      class="w-full px-3 py-1.5 border border-outline-variant rounded bg-surface text-sm focus:outline-none focus:border-primary"></textarea>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" @click="editModal = false" class="px-4 py-2 text-label-md font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors">Batal</button>
+                        <button type="button" @click="editModal = false; openDetailModal(editId)" class="px-4 py-2 text-label-md font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors">Batal</button>
                         <button type="submit" class="px-5 py-2 text-label-md font-bold bg-primary text-on-primary hover:bg-primary/90 rounded-lg transition-colors shadow-sm">Update</button>
                     </div>
                 </form>
@@ -487,7 +532,6 @@
                                     <thead class="bg-surface-container/60 border-b border-outline-variant">
                                         <tr>
                                             <th class="py-1.5 px-2.5 font-bold text-on-surface-variant text-center">NO</th>
-                                            <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">KODE</th>
                                             <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">URAIAN INFORMASI ARSIP</th>
                                             <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">KANTOR UNIT/UPT</th>
                                             <th class="py-1.5 px-2.5 font-bold text-on-surface-variant">BOKS</th>
@@ -498,7 +542,6 @@
                                         <template x-for="(item, idx) in paginatedDetailArsips()" :key="item.id">
                                             <tr class="hover:bg-surface-container/20 transition-colors">
                                                 <td class="py-1.5 px-2.5 text-on-surface-variant text-center font-medium" x-text="((detailPage - 1) * detailPerPage) + idx + 1"></td>
-                                                <td class="py-1.5 px-2.5 font-mono font-bold text-primary whitespace-nowrap" x-text="item.kode"></td>
                                                 <td class="py-1.5 px-2.5 text-on-surface font-medium line-clamp-1" x-text="item.uraian"></td>
                                                 <td class="py-1.5 px-2.5 text-on-surface-variant whitespace-nowrap" x-text="item.unit"></td>
                                                 <td class="py-1.5 px-2.5 font-bold text-primary whitespace-nowrap" x-text="item.boks"></td>
@@ -510,12 +553,7 @@
                             </div>
 
                             {{-- Paginasi Modal Detail (Batas 4 per Halaman) --}}
-                            <div x-show="totalDetailPages() > 1" class="flex items-center justify-between gap-2 mt-2 px-1 text-xs">
-                                <span class="text-on-surface-variant">
-                                    Menampilkan <span class="font-semibold text-on-surface" x-text="((detailPage - 1) * detailPerPage) + 1"></span> -
-                                    <span class="font-semibold text-on-surface" x-text="Math.min(detailPage * detailPerPage, detailData.arsips ? detailData.arsips.length : 0)"></span> dari
-                                    <span class="font-bold text-on-surface" x-text="detailData.arsips ? detailData.arsips.length : 0"></span> berkas
-                                </span>
+                            <div x-show="totalDetailPages() > 1" class="flex items-center justify-end gap-2 mt-2 px-1 text-xs">
                                 <div class="flex items-center gap-1.5">
                                     <button type="button" @click="if (detailPage > 1) detailPage--"
                                             :disabled="detailPage === 1"
@@ -529,6 +567,7 @@
                                             <span x-text="p"></span>
                                         </button>
                                     </template>
+
                                     <button type="button" @click="if (detailPage < totalDetailPages()) detailPage++"
                                             :disabled="detailPage === totalDetailPages()"
                                             class="px-2.5 py-1 rounded-lg border border-outline-variant bg-surface text-on-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed font-bold text-xs transition-colors">
@@ -540,7 +579,7 @@
                     </div>
                 </template>
 
-                <div class="mt-3 pt-2.5 border-t border-outline-variant flex justify-between items-center">
+                <div class="mt-5 pt-4 border-t border-outline-variant flex justify-between items-center">
                     <button type="button" @click="detailModal = false" class="px-3 py-1.5 text-xs font-bold border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
                         Tutup
                     </button>
@@ -548,9 +587,18 @@
                         <template x-if="detailData && detailData.status === 'dipinjam'">
                             <form :action="'/peminjaman/' + detailData.id + '/kembalikan'" method="POST" data-confirm="Tandai arsip ini sudah dikembalikan?">
                                 @csrf
-                                <button type="submit" class="px-3 py-1.5 text-xs font-bold bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim rounded-lg shadow-sm flex items-center gap-1 transition-colors">
+                                <button type="submit" style="background-color: #16a34a !important; color: white !important;" class="px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1 transition-colors hover:opacity-90">
                                     <span class="material-symbols-outlined text-xs">assignment_return</span>
                                     <span>Tandai Dikembalikan</span>
+                                </button>
+                            </form>
+                        </template>
+                        <template x-if="detailData && detailData.status === 'dikembalikan'">
+                            <form :action="'/peminjaman/' + detailData.id + '/batal-kembali'" method="POST" data-confirm="Tandai arsip ini dipinjam kembali?">
+                                @csrf
+                                <button type="submit" style="background-color: #eab308 !important; color: white !important;" class="px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm flex items-center gap-1 transition-colors hover:opacity-90">
+                                    <span class="material-symbols-outlined text-xs">undo</span>
+                                    <span>Tandai Dipinjam</span>
                                 </button>
                             </form>
                         </template>
@@ -563,6 +611,23 @@
             </div>
         </div>
     </div>
+    {{-- MODAL KONFIRMASI HAPUS ARSIP (EDIT) --}}
+    <div x-show="confirmDeleteModal" class="fixed inset-0 overflow-y-auto" style="z-index: 100;" x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div x-show="confirmDeleteModal" x-transition.opacity class="fixed inset-0 bg-black/60 transition-opacity" @click="confirmDeleteModal = false"></div>
+            <div x-show="confirmDeleteModal" x-transition.scale class="relative bg-surface rounded-2xl shadow-2xl w-full p-6 text-center border border-outline-variant" style="max-width: 320px;">
+                <div class="rounded-full flex items-center justify-center mx-auto mb-3" style="width: 50px; height: 50px; background-color: #fee2e2; color: #dc2626;">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">delete</span>
+                </div>
+                <h3 class="font-bold text-on-surface mb-1" style="font-size: 18px;">Hapus Arsip?</h3>
+                <p class="text-sm text-on-surface-variant mb-5">Yakin ingin menghapus arsip ini dari daftar?</p>
+                <div class="flex justify-center gap-2">
+                    <button type="button" @click="confirmDeleteModal = false; itemToDelete = null" class="px-4 py-2 text-sm font-bold text-on-surface-variant bg-surface hover:bg-surface-container-highest border border-outline-variant rounded-lg transition-colors">Batal</button>
+                    <button type="button" @click="executeRemoveEditArsip()" class="px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm transition-colors" style="background-color: #dc2626;">Ya, Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -571,6 +636,8 @@ document.addEventListener('alpine:init', () => {
         createModal: false,
         editModal: false,
         detailModal: false,
+        confirmDeleteModal: false,
+        itemToDelete: null,
         detailData: null,
         loadingDetail: false,
         detailPage: 1,
@@ -597,6 +664,9 @@ document.addEventListener('alpine:init', () => {
         editUnitId: '',
         editArsipGroups: [],
         selectedEditIds: [],
+        editArsipsList: [],
+        editPage: 1,
+        editPerPage: 4,
         editNamaPeminjam: '',
         editInstansi: '',
         editTelp: '',
@@ -684,19 +754,41 @@ document.addEventListener('alpine:init', () => {
             this.editUnitId = '';
             this.editArsipGroups = [];
             this.selectedEditIds = [];
+            this.editArsipsList = [];
+            this.editPage = 1;
 
             fetch(`/peminjaman/${id}/json`)
                 .then(r => r.json())
                 .then(data => {
                     this.selectedEditIds = data.arsip_ids || [];
+                    this.editArsipsList = data.arsips || [];
                     this.editNamaPeminjam = data.nama_peminjam;
                     this.editInstansi = data.instansi || '';
                     this.editTelp = data.telp || '';
                     this.editKeperluan = data.keperluan || '';
-                    this.editTglPinjam = data.tanggal_pinjam;
-                    this.editTglKembaliRencana = data.tanggal_kembali_rencana || '';
+                    this.editTglPinjam = data.tanggal_pinjam_raw;
+                    this.editTglKembaliRencana = data.tanggal_kembali_rencana_raw || '';
                     this.editKeterangan = data.keterangan || '';
                 });
+        },
+
+        removeEditArsip(id) {
+            this.itemToDelete = id;
+            this.confirmDeleteModal = true;
+        },
+
+        executeRemoveEditArsip() {
+            if (this.itemToDelete) {
+                this.editArsipsList = this.editArsipsList.filter(item => item.id !== this.itemToDelete);
+                this.selectedEditIds = this.selectedEditIds.filter(itemId => itemId !== this.itemToDelete);
+                // Check if current page is now empty
+                let maxPage = Math.ceil(this.editArsipsList.length / this.editPerPage);
+                if (this.editPage > maxPage && maxPage > 0) {
+                    this.editPage = maxPage;
+                }
+                this.confirmDeleteModal = false;
+                this.itemToDelete = null;
+            }
         },
     }));
 });
